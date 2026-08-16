@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>下载桌面端 — Blink</title>
+<style>
+/* 令牌与排版取自 index.html,保持同一套视觉 */
+:root {
+  --bg:          #fafafa;
+  --surface:     #ffffff;
+  --fg:          #111111;
+  --fg-2:        #2c2c2c;
+  --muted:       #6b6b6b;
+  --meta:        #8c8c8c;
+  --border:      #e5e5e5;
+  --border-soft: #f0f0f0;
+  --accent:      #2f6feb;
+  --success:     #17a34a;
+
+  --font-display: "Iowan Old Style", "Charter", "Times New Roman", Georgia, serif;
+  --font-body:    -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+
+  --space-2: 8px;  --space-3: 12px;  --space-4: 16px;
+  --space-6: 24px; --space-8: 32px;  --space-12: 48px;
+  --space-16: 64px; --space-20: 80px;
+
+  --container: 1120px;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--fg);
+  /* 首页是 three.js 水波,子页不值得为背景加载 600KB;用同色系静态渐变呼应 */
+  background: linear-gradient(180deg, #eaf3fb 0%, var(--bg) 62%);
+  min-height: 100vh;
+}
+
+.page { max-width: var(--container); margin: 0 auto; padding: var(--space-8) var(--space-4) var(--space-20); }
+
+.back {
+  display: inline-block; font-size: 13px; color: var(--muted);
+  text-decoration: none; transition: color 200ms var(--ease-out);
+  margin-bottom: var(--space-8);
+}
+.back:hover { color: var(--fg); }
+
+/* ─── 外层大容器:对应参考图那张浅底圆角大卡 ─── */
+.panel {
+  position: relative;
+  border-radius: 24px;
+  border: 1px solid var(--border-soft);
+  background: rgba(255,255,255,0.55);
+  padding: var(--space-20) var(--space-8) var(--space-16);
+  overflow: hidden;
+}
+/* 极淡网格底纹(参考图是几何暗纹);纯 CSS,零额外请求 */
+.panel::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(17,17,17,.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17,17,17,.022) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 100%);
+}
+.panel > * { position: relative; }
+
+.eyebrow {
+  text-align: center; font-size: 12px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase; color: var(--accent);
+  margin-bottom: var(--space-4);
+}
+h1 {
+  text-align: center; font-family: var(--font-display); font-weight: 400;
+  font-size: clamp(38px, 6vw, 68px); line-height: 1.15; letter-spacing: 1px;
+  margin-bottom: var(--space-4);
+}
+.lede { text-align: center; font-size: 15px; color: var(--muted); margin-bottom: var(--space-12); }
+
+/* 支持平台行 */
+.platforms {
+  display: flex; justify-content: center; align-items: center; gap: 10px;
+  flex-wrap: wrap; font-size: 13px; color: var(--meta); margin-bottom: var(--space-6);
+}
+.platforms b { color: var(--accent); font-weight: 600; }
+.platforms span { color: var(--border); }
+
+/* 平台标识条:参考图是可切的三个 tab,这里只有一个平台,
+   所以做成不可点的标识条 —— 不假装能切 */
+.osbar {
+  max-width: 840px; margin: 0 auto var(--space-4);
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 14px; padding: 6px;
+}
+.osbar__item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--fg); color: #fff; border-radius: 10px;
+  padding: 12px 18px; font-size: 15px; font-weight: 600;
+}
+.osbar__badge {
+  margin-left: auto; font-size: 12px; font-weight: 500;
+  color: var(--success); background: rgba(23,163,74,.14);
+  padding: 3px 10px; border-radius: 999px;
+}
+
+/* 下载卡片 */
+.card {
+  max-width: 840px; margin: 0 auto;
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 16px; padding: var(--space-6) var(--space-8);
+  display: flex; align-items: center; gap: var(--space-4);
+}
+.card__name { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.card__meta { font-size: 13px; color: var(--muted); }
+.card__tag {
+  margin-left: auto; flex-shrink: 0; font-size: 12px; font-weight: 500;
+  color: var(--success); background: rgba(23,163,74,.14);
+  padding: 4px 12px; border-radius: 999px;
+}
+
+/* 非 macOS 访客:标识条转中性、徽标改「暂不支持」,并显示跨平台说明。
+   由页尾脚本按真实平台切换 —— 默认标记(「当前设备」/「推荐」)只对 Mac 成立 */
+.osbar__item--off { background: var(--border-soft); color: var(--muted); }
+/* 苹果图标只在真 Mac 上出现。注意不能用 svg.hidden —— hidden 是 HTMLElement 的属性,
+   SVGElement 不继承,赋值只会挂个无效的 JS 属性 */
+.osbar__item--off > svg { display: none; }
+.osbar__badge--off { color: var(--muted); background: rgba(17,17,17,.06); }
+.crossnote {
+  max-width: 840px; margin: var(--space-4) auto 0; text-align: center;
+  font-size: 13px; line-height: 1.7; color: var(--muted);
+}
+
+/* 两个按钮 */
+.acts {
+  max-width: 840px; margin: var(--space-6) auto 0;
+  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  border-radius: 999px; font-size: 14px; font-weight: 600;
+  text-decoration: none; border: 1px solid transparent;
+  transition: background-color 180ms var(--ease-out), border-color 180ms var(--ease-out),
+              box-shadow 180ms var(--ease-out), transform 120ms var(--ease-out);
+}
+.pill--primary { background: var(--fg); color: #fff; padding: 12px 24px; }
+.pill--primary:hover { background: var(--fg-2); box-shadow: 0 6px 16px rgba(0,0,0,.16); }
+.pill--primary:active { background: #000; box-shadow: none; transform: translateY(1px); }
+.pill--ghost { background: var(--surface); color: var(--fg); border-color: var(--border); padding: 11px 22px; }
+.pill--ghost:hover { background: var(--border-soft); border-color: #cccccc; }
+.pill--ghost:active { background: var(--border); transform: translateY(1px); }
+.pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pill__note { font-weight: 400; color: var(--meta); font-size: 13px; }
+
+/* 首次打开说明 */
+/* 触发行居中(summary 是 inline-flex,靠父级 text-align 居中);展开的正文回到左对齐 */
+.notes { max-width: 840px; margin: var(--space-12) auto 0; text-align: center; }
+/* 字号/颜色与「目前仅支持平台」那行(.platforms)完全一致 */
+.notes summary {
+  cursor: pointer; font-size: 13px; color: var(--meta); list-style: none;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.notes summary::-webkit-details-marker { display: none; }
+.notes summary:hover { color: var(--fg); }
+/* 箭头 = RemixIcon arrow-down-s-line,路径从项目自带的 remixicon.woff2 里
+   按码位 U+EA4E 提取(em 1200 / ascent 1020),已翻转 y 轴转成 SVG 坐标 */
+.notes__chev { width: 14px; height: 14px; flex-shrink: 0; transition: transform 200ms var(--ease-out); }
+.notes[open] .notes__chev { transform: rotate(180deg); }
+.notes__body {
+  margin-top: var(--space-4); padding: var(--space-6);
+  background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px;
+  font-size: 14px; color: var(--fg-2); text-align: left;
+}
+.notes__body ol { margin: var(--space-3) 0 0 20px; }
+.notes__body li { margin-bottom: 6px; }
+.notes__body code {
+  font-family: ui-monospace, "SF Mono", monospace; font-size: 12.5px;
+  background: var(--border-soft); padding: 2px 6px; border-radius: 5px;
+}
+
+/* 页脚 */
+.foot {
+  max-width: 840px; margin: var(--space-16) auto 0; padding-top: var(--space-8);
+  font-size: 12px; color: var(--meta); text-align: center;
+}
+.foot a { color: inherit; text-decoration: none; }
+.foot a:hover { color: var(--fg); }
+.foot div + div { margin-top: 6px; }
+
+@media (max-width: 640px) {
+  .panel { padding: var(--space-12) var(--space-4) var(--space-12); border-radius: 18px; }
+  .card { flex-wrap: wrap; padding: var(--space-6); }
+  .card__tag { margin-left: 0; }
+  .acts .pill { flex: 1 1 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <a class="back" href="./index.html">← 返回首页</a>
+
+  <div class="panel">
+    <div class="eyebrow">Blink / Desktop</div>
+    <h1>下载 Blink 桌面端</h1>
+    <p class="lede">本地运行，随时唤起。装好即用，不需要登录</p>
+
+    <div class="platforms">
+      <b>目前仅支持平台</b>
+      <span>·</span>
+      macOS · Apple 芯片(M1 及以上)
+    </div>
+
+    <div class="osbar">
+      <div class="osbar__item" id="osrow">
+        <svg id="osicon" width="17" height="17" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M11.182.008C11.148-.03 9.923.023 8.857 1.18c-1.066 1.156-.902 2.482-.878 2.516.024.034 1.52.087 2.475-1.258.955-1.345.762-2.391.728-2.43Zm3.314 11.733c-.048-.096-2.325-1.234-2.113-3.422.212-2.189 1.675-2.789 1.698-2.854.023-.065-.597-.79-1.254-1.157a3.692 3.692 0 0 0-1.563-.434c-.108-.003-.483-.095-1.254.116-.508.139-1.653.589-1.968.607-.316.018-1.256-.522-2.267-.665-.647-.125-1.333.131-1.824.328-.49.196-1.422.754-2.074 2.237-.652 1.482-.311 3.83-.067 4.56.244.729.625 1.924 1.273 2.796.576.984 1.34 1.667 1.659 1.899.319.232 1.219.386 1.843.067.502-.308 1.408-.485 1.766-.472.357.013 1.061.154 1.782.539.571.197 1.111.115 1.652-.105.541-.221 1.324-1.059 2.238-2.758.347-.79.505-1.217.473-1.282Z"/></svg>
+        <span id="osname">macOS</span>
+        <span class="osbar__badge" id="osbadge">当前设备</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div>
+        <div class="card__name">Apple 芯片版</div>
+        <div class="card__meta">适用于 M 系列芯片 · DMG · 157 MB · v0.8.1</div>
+      </div>
+      <span class="card__tag" id="cardtag">推荐</span>
+    </div>
+
+    <p class="crossnote" id="crossnote" hidden>Blink 目前只有 macOS 版(Apple 芯片)，Windows 与 Linux 还在做。下面的安装包只能装在 Apple 芯片的 Mac 上。</p>
+
+    <div class="acts">
+      <a class="pill pill--primary" href="https://github.com/arise130315/BlinkWork/releases/latest" target="_blank" rel="noopener noreferrer">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path></svg>
+        从 GitHub 下载
+      </a>
+      <a class="pill pill--ghost" href="https://blinkwork.cn/download/blink-0.8.1-mac-arm64.dmg">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        普通下载 <span class="pill__note">(限速)</span>
+      </a>
+    </div>
+
+    <details class="notes">
+      <summary>首次打开会提示「无法验证开发者」，点这里看怎么办<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary>
+      <div class="notes__body">
+        安装包目前没有做苹果公证，首次打开时系统会拦一下。不影响使用，按这四步走:
+        <ol>
+          <li>打开 dmg，把 Blink 拖进「应用程序」</li>
+          <li>双击打开，出现提示后点「完成」</li>
+          <li>打开「系统设置 → 隐私与安全性」，下滑找到被拦截的 Blink，点「仍要打开」</li>
+          <li>再次确认「打开」</li>
+        </ol>
+        <p style="margin-top:12px">之后每次打开都正常，不用再走这套。想核对安装包完整性，可以下载同目录的 <code>.sha256</code> 文件后执行 <code>shasum -a 256 -c</code>。</p>
+      </div>
+    </details>
+  </div>
+
+  <div class="foot">
+    <div>© 2026 Blink. All rights reserved.</div>
+    <div><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026072152号-2</a> · <a href="./privacy.html">隐私政策</a></div>
+  </div>
+</div>
+
+<script>
+/* 平台检测:页面默认按 macOS 渲染(绝大多数访客),非 Mac 才改写。
+   这样即使脚本被拦,Mac 用户看到的仍是对的。
+   注:浏览器无法可靠区分 Apple 芯片与 Intel Mac(都报 MacIntel),
+   所以 Mac 一律显示「当前设备」,芯片要求写在卡片说明里。 */
+(function () {
+  var ua = navigator.userAgent || '';
+  var plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+  var probe = plat + ' ' + ua;
+
+  // iPhone 的 UA 含「like Mac OS X」、iPadOS 13+ 更是直接伪装成 Macintosh,
+  // 只匹配 /mac/ 会把 iOS 设备判成 Mac。iPad 靠触点数区分(桌面 Mac 恒为 0)。
+  var isIOS = /iPhone|iPad|iPod/i.test(probe)
+           || (/Mac/i.test(probe) && (navigator.maxTouchPoints || 0) > 1);
+  if (/mac/i.test(probe) && !isIOS && !/Android/i.test(ua)) return;  // 真 Mac:默认标记就是对的
+
+  var name = isIOS ? 'iPhone / iPad'
+           : /Win/i.test(probe) ? 'Windows'
+           : /Android/i.test(ua) ? 'Android'
+           : /Linux|X11|CrOS/i.test(probe) ? 'Linux'
+           : '你当前的设备';
+
+  document.getElementById('osname').textContent = name;
+  document.getElementById('osrow').classList.add('osbar__item--off');  // 同时藏掉苹果图标(见 CSS)
+
+  var badge = document.getElementById('osbadge');
+  badge.textContent = '暂不支持';
+  badge.classList.add('osbar__badge--off');
+
+  var tag = document.getElementById('cardtag');
+  if (tag) tag.remove();                       // 对非 Mac 用户不构成「推荐」
+
+  document.getElementById('crossnote').hidden = false;
+})();
+</script>
+</body></html>

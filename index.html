@@ -1,0 +1,1928 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blink — 编辑拼贴 · 设计工作室 · 方案2(水波背景)</title>
+<style>
+/* ─── Neutral Modern · 编辑拼贴变体 ──────────────────────────────── */
+:root {
+  --bg:          #fafafa;
+  --surface:     #ffffff;
+  --fg:          #111111;
+  --fg-2:        #2c2c2c;
+  --muted:       #6b6b6b;
+  --meta:        #8c8c8c;
+  --border:      #e5e5e5;
+  --border-soft: #f0f0f0;
+  --accent:      #2f6feb;
+  --accent-on:   #ffffff;
+  --success:     #17a34a;
+  --warn:        #eab308;
+  --danger:      #dc2626;
+
+  --font-display: "Iowan Old Style", "Charter", "Times New Roman", Georgia, serif;
+  --font-body:    -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  --font-mono:    ui-monospace, "JetBrains Mono", "SF Mono", monospace;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
+  --space-4: 16px; --space-5: 20px; --space-6: 24px;
+  --space-8: 32px; --space-12: 48px; --space-16: 64px; --space-20: 80px; --space-24: 96px;
+
+  --container: 1200px;
+  --container-narrow: 720px;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --duration-slow: 600ms;
+}
+
+/* ─── Reset & base ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* scroll-padding-top:导航是 fixed 的(两态都约 73px 高),锚点跳转不让开就会把落点
+   顶部压在胶囊底下。88px = 胶囊底 73 + 15px 呼吸。首页和页脚在文档两端、滚不过去,
+   不受影响。 */
+html { scroll-behavior: smooth; scroll-padding-top: 88px; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--fg);
+  /* 背景由 blink 水波画布(#app)承担;此处仅作兜底海报(画布加载失败/减弱动态时露出) */
+  background: #eaf3fb url('./hero.jpg') center top / cover no-repeat;
+  overflow-x: hidden;
+}
+
+/* ─── 水波背景(复用自 blink:img_bg4 + 点击涟漪)──────────────────── */
+#app { position: fixed; inset: 0; z-index: -1; }   /* WebGL 画布:固定铺满、垫在所有内容之下,作整页背景 */
+#app canvas { display: block; }   /* 尺寸由 three.js 的 renderer.setSize 写行内样式,CSS 不插手 */
+/* 注意:粒子画布**不能**用 max-width 之类的 CSS 去限宽。它的显示尺寸(style.width)
+   与位图坐标系(canvas.width)是脚本成对设定的一对值,CSS 单方面压窄显示宽度只会把
+   位图横向缩放,粒子随之整体缩位、与实心文字错开(hover ↔ 常规两态跳位)。
+   窄视口溢出由两条不碰坐标系的机制兜住:基础样式的 0 尺寸 + build() 里的视口夹取。 */
+.nowebgl {
+  position: fixed; inset: 0; z-index: 20; display: none;
+  align-items: center; justify-content: center; text-align: center;
+  color: #2c5d72; font-size: 15px; padding: 40px;
+}
+
+/* ─── Sticky nav:顶部通栏 ⇄ 悬浮玻璃胶囊 ──────────────────────────
+   两态之间只差「位置」:logo 与右侧 tab 的元素、尺寸、字号、字重、间距全程不动,
+   变的是 nav 自身的离顶距离 / 左右缩进 / 内边距 / 圆角 —— 内容被这层盒子带着走。
+   七个旋钮在下面,调悬浮态的形态只改这七个值。 */
+nav {
+  --nav-float-top:   12px;                    /* 悬浮态离顶距离 */
+  --nav-float-inset: 13%;                     /* 悬浮态左右缩进(百分比,跟着视口走) */
+  --nav-float-max:   1120px;                  /* 悬浮态最大宽度,超宽屏不至于拉成长条 */
+  --nav-float-radius: 31px;                   /* 略大于悬浮态半高(61÷2),落位那一刻正好收成胶囊;
+                                                 想要方一点的圆角矩形就把它调小,改内边距也记得跟着调 */
+  --nav-glass-fill:  rgba(255,255,255,.01);   /* 玻璃底色:照抄油画云天,几乎不上色,材质全靠模糊和描边 */
+  --nav-glass-blur:  4px;                     /* 玻璃模糊半径:同上,照抄油画云天 */
+  --nav-ring-width:  2px;                     /* 上下高光那圈的粗细(母版是 1.4px,这里按要求加粗) */
+  /* 窄屏展开菜单用同一块玻璃,但厚一档:它是压在正文上的大面积面板,
+     照胶囊那样几乎全透会让底下的按钮和图片直接透上来,菜单读不了。
+     想要跟胶囊一模一样的透度,把这两个值改成 var(--nav-glass-fill) / var(--nav-glass-blur) 即可。 */
+  --nav-sheet-fill:  rgba(255,255,255,.55);
+  --nav-sheet-blur:  40px;                    /* 面板压着正文,模糊给足才糊得开底下的按钮和图片 */
+
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  max-width: 100%;                            /* 与悬浮态的 max-width 成对,宽度才连续可插值 */
+  margin-inline: auto;                        /* 宽度被 max-width 夹住后靠它居中 */
+  padding: 16px var(--space-6);
+  display: flex; justify-content: space-between; align-items: center;
+  border-radius: 0;
+  transition: top var(--duration-slow) var(--ease-out),
+              left var(--duration-slow) var(--ease-out),
+              right var(--duration-slow) var(--ease-out),
+              max-width var(--duration-slow) var(--ease-out),
+              padding var(--duration-slow) var(--ease-out),
+              border-radius var(--duration-slow) var(--ease-out);
+  background-color: transparent;
+}
+nav.scrolled {
+  top: var(--nav-float-top);
+  left: var(--nav-float-inset); right: var(--nav-float-inset);
+  max-width: var(--nav-float-max);
+  padding: 10px 20px;
+  border-radius: var(--nav-float-radius);
+}
+/* 胶囊的玻璃底板:单独一层伪元素,用 z-index:-1 压在 logo 和 tab 下面。
+   材质照抄油画云天落地页的 .glass:几乎不上色的底 + 亮度混合 + 小半径模糊 + 一条内壁顶光;
+   外投影是母版没有的,按要求加:蓝青色、大扩散、很淡,跟本页卡片那套柔影同一家族。
+
+   为什么不直接写在 nav 上 —— backdrop-filter 会把所在元素变成「背景根」,它的后代再写
+   backdrop-filter 就只能采样到这层内部的东西。窄屏展开菜单正是 nav 的后代:模糊写在 nav 上时,
+   通栏态(nav 没有 backdrop-filter)菜单糊的是页面、正常,一进胶囊态菜单的毛玻璃就整个失效。
+   挪到伪元素上之后 nav 自己不再是背景根,胶囊和菜单各糊各的页面。
+   也因此不能给 nav 加 overflow:hidden —— 那会连带裁掉挂在里面的展开菜单。 */
+nav::after {
+  content: '';
+  position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-color: var(--nav-glass-fill);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(var(--nav-glass-blur));
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.1),   /* 母版的内壁顶光 */
+              0 2px 6px  rgba(30,70,90,.015),         /* 贴身接触影,把胶囊从背景上托起来 */
+              0 12px 64px rgba(30,70,90,.10);         /* 大扩散柔影 */
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+nav.scrolled::after { opacity: 1; }
+/* 玻璃的签名描边:上下亮、腰部透明的渐变环(padding + mask 挖空),
+   停点与透明度也照抄油画云天,不做浅底适配。
+   别换成一圈等亮度的实色描边,那是卡片不是玻璃。 */
+nav::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  padding: var(--nav-ring-width);
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,.45) 0%,  rgba(255,255,255,.15) 20%,
+    rgba(255,255,255,0)   40%, rgba(255,255,255,0)   60%,
+    rgba(255,255,255,.15) 80%, rgba(255,255,255,.45) 100%);
+  /* 挖空必须两套都写:老浏览器认不出 mask 时整块渐变会盖住 logo 和 tab */
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--duration-slow) var(--ease-out);
+}
+nav.scrolled::before { opacity: 1; }
+nav .logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  color: var(--fg);
+}
+nav .logo em { font-style: normal; color: var(--accent); }
+/* 标志往下压 5px:SVG 是行内元素、坐在基线上,基线下面还留着 9px 降部空位,
+   所以 <a> 盒子虽然是居中的,里面这枚 32px 标志天然偏上 4.5px(再加它在自己
+   viewBox 里也偏上约 1px)。用 relative 位移不动布局 —— 导航高度、胶囊几何、
+   两态过渡都不受影响。 */
+nav .logo svg { position: relative; top: 5px; }
+nav .nav-links { display: flex; gap: var(--space-8); list-style: none; }
+nav .nav-links a {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  color: var(--muted);
+  transition: color 200ms var(--ease-out);
+  position: relative;
+}
+nav .nav-links a::after {
+  content: '';
+  position: absolute; bottom: -2px; left: 0; right: 0;
+  height: 1px; background: var(--accent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 200ms var(--ease-out);
+}
+nav .nav-links a:hover { color: var(--fg); }
+nav .nav-links a:hover::after { transform: scaleX(1); }
+.nav-toggle { display: none; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--fg); }
+
+/* ─── Scroll reveal ──────────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 100ms; }
+.reveal-delay-2 { transition-delay: 200ms; }
+.reveal-delay-3 { transition-delay: 300ms; }
+.reveal-delay-4 { transition-delay: 400ms; }
+
+/* ─── Sections spacing ───────────────────────────────────────────── */
+section { position: relative; }
+.section-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-20) var(--space-4);
+}
+.section-inner.narrow {
+  max-width: var(--container-narrow);
+}
+
+/* ─── Hero ────────────────────────────────────────────────────────── */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 120px var(--space-6) var(--space-16);
+  position: relative;
+  overflow: hidden;
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12);
+  max-width: var(--container);
+  margin: 0 auto;
+  align-items: center;
+}
+.hero-text .kicker {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: var(--space-4);
+}
+.hero-text h1 {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 7vw, 88px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  margin-bottom: var(--space-6);
+}
+.hero-text h1 em { font-style: normal; color: var(--accent); }
+.hero-text .sub {
+  font-family: var(--font-body);
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 440px;
+}
+.hero-collage {
+  position: relative;
+  aspect-ratio: 4/5;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 8px;
+}
+.hero-collage .piece {
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.hero-collage .piece:nth-child(1) { grid-column: 1 / 2; grid-row: 1 / 3; }
+.hero-collage .piece:nth-child(2) { grid-column: 2 / 3; grid-row: 1 / 2; }
+.hero-collage .piece:nth-child(3) { grid-column: 2 / 3; grid-row: 2 / 3; }
+.hero-collage .piece:nth-child(4) { grid-column: 1 / 3; grid-row: 3 / 4; }
+.hero-collage .piece .ph-img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--border);
+}
+.hero-collage .piece .ph-img::before {
+  content: attr(data-label);
+  position: absolute;
+  bottom: 8px; left: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(255,255,255,0.85);
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+
+/* ─── Section titles ─────────────────────────────────────────────── */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--meta);
+  margin-bottom: var(--space-4);
+}
+.section-title {
+  font-family: var(--font-display);
+  font-size: clamp(32px, 4vw, 52px);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin-bottom: var(--space-8);
+  color: var(--fg);
+}
+
+/* ─── Manifesto (editorial split) ────────────────────────────────── */
+.manifesto-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-12) var(--space-16);
+}
+.manifesto-grid .lead {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2vw, 28px);
+  line-height: 1.4;
+  color: var(--fg);
+}
+.manifesto-grid .body-text p {
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--fg-2);
+  margin-bottom: var(--space-4);
+}
+.manifesto-grid .stat {
+  font-family: var(--font-display);
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+.manifesto-grid .stat-label {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* ─── Pull quote ─────────────────────────────────────────────────── */
+.pull-quote {
+  max-width: var(--container-narrow);
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-4);
+  text-align: center;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+.pull-quote blockquote {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.5vw, 40px);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  font-style: italic;
+  quotes: "“" "”" "‘" "’";
+}
+.pull-quote blockquote::before { content: "“"; color: var(--accent); }
+.pull-quote blockquote::after  { content: "”"; color: var(--accent); }
+.pull-quote cite {
+  display: block;
+  margin-top: var(--space-6);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-style: normal;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+/* ─── 首屏装饰卡 ──────────────────────────────────────────────────
+   三张玻璃小卡浮在产品截图的边缘上,跟随页面滚动。
+   位置用百分比挂在 .hero-deco(与截图同宽同中心)上,截图尺寸变了也不会跑。
+   聚拢动效:JS 按「容器中心距视口中心的远近」逐帧写 --gather(0~1),
+   0 = 散开(默认,离视口中央还远),1 = 完全聚拢(正对视口中央)。
+   位移只走 transform,不触发回流。 */
+/* --gather 的初始值必须写在这里,不能只靠脚本设。
+   它前面有 bg-base64.js(240K)+ three.min.js(594K)两个阻塞解析的脚本,
+   慢网下首屏已经画出来了、设 gather 的脚本还没执行 —— 那一段时间卡片会按
+   transform 里的兜底值 0 渲染(完全散开),脚本一跑再跳到 0.3,肉眼可见地弹一下。
+   写在这里第一帧就是对的。改动效起点改这一个值即可,脚本会读它当斜坡起点。 */
+.hero-deco { position: relative; max-width: 860px; margin: clamp(28px,4vw,48px) auto 0; --gather: .3; }
+.hero-deco > figure.bkv-media { margin-top: 0; }   /* 上边距移交给 .hero-deco,免得叠两次 */
+.deco {
+  position: absolute; z-index: 2;
+  width: var(--w, 170px); padding: var(--pad, 14px 16px 16px);
+  border-radius: 16px;
+  text-align: left;
+  /* 玻璃配方与顶部导航胶囊同源:几乎不上色的底 + 亮度混合 + 内壁顶光 + 上下亮腰部透明的渐变环。
+     底色按要求比导航厚一档(导航是 .01)—— 这三张卡压在产品截图上,太透读不出字。 */
+  background-color: rgba(255,255,255,.32);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,.5),
+              0 14px 38px rgba(30,70,90,.12);
+  /* 三张卡各有自己的尺寸与角度,别站得一样齐;位移与旋转合在同一条 transform 里 */
+  transform: translate3d(calc(var(--dx) * (1 - var(--gather, 0))),
+                         calc(var(--dy) * (1 - var(--gather, 0))), 0)
+             rotate(var(--rot, 0deg));
+}
+.deco::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  padding: 1.4px; pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,.45) 0%,  rgba(255,255,255,.15) 20%,
+    rgba(255,255,255,0)   40%, rgba(255,255,255,0)   60%,
+    rgba(255,255,255,.15) 80%, rgba(255,255,255,.45) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+/* 散开幅度吃的是版心两侧的余量(版心固定 860)。视口一窄余量就不够,
+   散开态会被 body 的 overflow-x:hidden 切掉半张卡 —— 所以幅度按余量夹住:
+   余量够就用满,不够就自动收,收到 0 为止。减去的常数是各卡自己的基准外探量。 */
+.deco { --room: calc((100vw - 860px) / 2); }
+.deco--a { left: -8%;  top: 11%;    --w: 190px; --pad: 16px 18px 18px; --rot: -3.2deg;
+           --dx: calc(-1 * clamp(0px, var(--room) - 86px, 162px)); --dy: -14px; }
+.deco--b { right: -9%; top: 45%;    --w: 158px; --pad: 13px 15px 15px; --rot:  2.6deg;
+           --dx: clamp(0px, var(--room) - 96px, 168px);           --dy:  66px; }
+.deco--c { left: -6%;  bottom: 10%; --w: 172px; --pad: 14px 16px 16px; --rot: -1.4deg;
+           --dx: calc(-1 * clamp(0px, var(--room) - 84px, 166px)); --dy:  24px; }
+.deco__label {
+  font-family: var(--font-mono); font-size: 10px;
+  letter-spacing: .12em; color: var(--meta);
+}
+.deco__title {
+  margin-top: 7px;
+  font-size: 15px; font-weight: 600; line-height: 1.45;
+  letter-spacing: -0.01em; color: var(--fg);
+}
+/* 标记:纯几何、纯填充、浅色 —— 深色描边压在这么小的玻璃卡上太扎眼。
+   一件浅灰打底,一件蓝色点睛,不抢标题。 */
+.deco__mark { display: block; width: 100%; height: 40px; margin-top: 14px; }
+/* 必须锁等比并左对齐:三张卡宽度不同,不写 preserveAspectRatio 的话
+   viewBox 会被各自横向拉伸(实测 1.30 / 1.08 / 1.17 倍),圆点拉成椭圆、圆角拉扁,
+   三张卡的图形比例全不一样 —— 这就是看起来「没对齐」的真正原因。 */
+.deco__mark svg { display: block; width: 100%; height: 100%; }
+/* 中性件。原来是中性近黑 rgba(20,23,28,.11),压在浅底上就是纯灰。改用蓝系深墨加一点蓝相,
+   不透明度必须同步重算 —— 混合后的明度 = α·L(墨) + (1-α)·L(底),换墨不换 α 会直接变亮。
+   解 α·(L墨-L底) = .11·(L原墨-L底)。这版是收过一次的:先做到 rgba(10,40,130,.12)(蓝 +10)
+   偏浓,减半到现在这组 —— 相对原色蓝通道 +5、红 -2、绿 0,明度差 -0.06/255。
+   要再调蓝相就动墨的 B 分量、α 按上面那条式子重算,别单独动其中一个。 */
+.deco__mark .n { fill: rgba(15,32,80,.115); }
+.deco__mark .a { fill: rgba(47,111,235,.42); }   /* 强调件,取页面的 --accent */
+@media (max-width: 1100px) { .deco { display: none; } }  /* 再窄连基准外探量都放不下,整组收起 */
+
+/* 标记的循环动效:只动 transform / opacity,幅度都很小、曲线统一 —— 是「呼吸」不是「表演」。
+   SVG 子元素要 transform-box:fill-box,否则 transform-origin 会落到整幅画布的原点上。 */
+.deco__mark * { transform-box: fill-box; transform-origin: center; }
+@keyframes deco-slide { 0%, 100% { transform: translateX(0); }   50% { transform: translateX(7px); } }
+@keyframes deco-breathe { 0%, 100% { opacity: .55; }             50% { opacity: 1; } }
+@keyframes deco-pulse { 0%, 100% { transform: scale(1);   opacity: .85; }
+                        50%      { transform: scale(1.18); opacity: 1; } }
+@keyframes deco-send  { 0%   { transform: translateX(0);    opacity: 0; }
+                        18%  { opacity: 1; }
+                        72%  { opacity: 1; }
+                        100% { transform: translateX(26px); opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  /* A:三条依次轻移,像一叠稿子被逐张推开 */
+  .deco--a .l1 { animation: deco-slide 3.6s ease-in-out infinite; }
+  .deco--a .l2 { animation: deco-slide 3.6s ease-in-out infinite .2s; }
+  .deco--a .l3 { animation: deco-slide 3.6s ease-in-out infinite .4s; }
+  /* B:核心那点缓缓搏动,右侧两条线错开呼吸 */
+  .deco--b .dot { animation: deco-pulse 2.4s ease-in-out infinite; }
+  .deco--b .b1  { animation: deco-breathe 2.4s ease-in-out infinite; }
+  .deco--b .b2  { animation: deco-breathe 2.4s ease-in-out infinite .34s; }
+  /* C:一颗点沿轨道从左边送到右边,循环 */
+  .deco--c .send { animation: deco-send 2.2s cubic-bezier(.4,0,.2,1) infinite; }
+
+  /* 整卡的悬浮:用**独立的 translate 属性**,不碰 transform ——
+     transform 那条正被聚拢位移和旋转占着,写成动画会被整条顶掉。
+     三张卡的周期和延时都错开,免得像同一根线上的三个吊坠一起晃。 */
+  .deco--a { animation: deco-hover 4.2s ease-in-out infinite; }
+  .deco--b { animation: deco-hover 4.8s ease-in-out infinite .7s; }
+  .deco--c { animation: deco-hover 4.5s ease-in-out infinite .4s; }
+}
+@keyframes deco-hover { 0%, 100% { translate: 0 0; } 50% { translate: 0 -9px; } }
+
+/* ─── 能力卡 ──────────────────────────────────────────────────────
+   版式:序号 + 右侧分类 → 细分割线 → 粗黑体双行标题 → 说明 → 底部插画出血。
+   四张卡各占一档配色,颜色全走卡片自己的 --pc-* 变量,换配色只改 .project-card--*
+   那四行;插画件不写死色值,一律取 --pc-acc / --pc-acc-2 / --pc-ink。
+   插画语言:扁平几何 + 每张卡一块毛玻璃(.pc-glass,配方与顶部导航胶囊同源)。 */
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-5);
+}
+.project-card {
+  --pc-bg:    var(--surface);
+  --pc-fg:    var(--fg);
+  --pc-muted: var(--muted);
+  --pc-acc:   #7C5CE0;                      /* 插画主强调色 */
+  --pc-acc-2: #2FA968;                      /* 插画次强调色 */
+  --pc-lime:  #C8F03C;
+  --pc-ink:   #14171C;                      /* 插画里的深色块 */
+  --pc-pad:   26px;                         /* 卡片左右内边距;插画出血与窗口/套件卡的左右都引它,改一处就整齐 */
+
+  position: relative;
+  container-type: inline-size;              /* 标题按「卡片宽度」缩放,不按视口 —— 见 .card-title */
+  display: flex; flex-direction: column;
+  min-height: 468px;
+  padding: 30px var(--pc-pad) 0;
+  border: none;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--pc-bg);
+  color: var(--pc-fg);
+  transition: transform 400ms var(--ease-out), box-shadow 400ms var(--ease-out);
+}
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(30,70,90,.12);
+}
+/* 墨黑卡的底不是纯平色:左上一道很淡的自然光,右下一团品牌紫的余晖(呼应插画里的紫模版)。
+   两团都压得很轻,只是让大片黑不发死。 */
+.project-card--ink {
+  --pc-bg: radial-gradient(116% 78% at 10% -8%,  rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 58%),
+           radial-gradient(78% 52% at 92% 108%,  rgba(124,92,224,.30) 0%, rgba(124,92,224,0) 72%),
+           #14171C;
+  --pc-fg:#F2F3F5; --pc-muted:#98A0AB; --pc-ink:#0E1116;
+}
+/* 米白与薄荷比参考稿压深一档:参考稿是压在黑底上的,这页底是浅蓝天空,
+   照搬原值会跟背景糊在一起分不出卡片边界 */
+.project-card--cream { --pc-bg:#E7DDC6; --pc-fg:#14171C; --pc-muted:#665F4E; }
+/* 明暗关系:卡底压深、插画取亮 —— 插画浮在卡上,不是陷进去。
+   参照淡紫卡里白文稿对卡底的 1.40,薄荷这张也按这个差值配。 */
+/* 绿卡原来是 #DDEBE4,对页面底只有 1.096 对比度,而紫卡 1.250、沙卡 1.284 ——
+   三张彩卡里就它像浮在天空底上没落下来。压到 #C7DED0 后是 1.265,正好落在紫和沙中间。
+   正文 #425A4C 对底仍有 5.28(过 AA),标题 12.65,身上那张白色套件卡的分离度还从 1.23 提到 1.42。 */
+.project-card--mint  { --pc-bg:#C7DED0; --pc-fg:#14171C; --pc-muted:#425A4C; --pc-acc-2:#1F9E5C; }
+.project-card--lilac { --pc-bg:#DED5F7; --pc-fg:#14171C; --pc-muted:#5F5680; }
+.project-card--sand  { --pc-bg:#E2D6BB; --pc-fg:#14171C; --pc-muted:#5C5443; }
+
+.project-card .card-title {
+  font-family: var(--font-display);         /* 跟页面大标题(核心能力)同一款衬线 */
+  /* 用 cqw(卡片自身宽度的百分比)而不是 vw:两列档的卡片比四列档宽一倍,
+     按视口算反而会更小 —— 1280 视口下 2vw 只有 25.6px,卡片却有 600px 宽,标题就飘在一片空白里。 */
+  font-size: clamp(24px, 9cqw, 52px);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--pc-fg);
+  margin: 0 0 16px;
+}
+.project-card .card-desc {
+  font-size: 13px;                          /* 固定,不跟卡片宽度走 —— 只有标题需要撑场面 */
+  line-height: 1.85;
+  color: var(--pc-muted);
+  margin: 0;
+}
+/* 插画台:压在卡片底部,左右与底部出血 */
+.project-card .card-img {
+  position: relative;
+  height: 186px;
+  margin: auto calc(-1 * var(--pc-pad)) 0;
+  background: none;
+}
+
+/* ── 插画通用件 ────────────────────────────────────────────────── */
+/* 毛玻璃:与顶部导航胶囊同源 —— 几乎不上色的底 + 模糊 + 上下亮腰部透明的渐变环。
+   这里底色比导航厚一些:插画里的色块贴得很近,太透就看不出是一层玻璃。 */
+.pc-glass {
+  position: relative;
+  background: rgba(255,255,255,.30);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+}
+.pc-glass::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  padding: 1.4px; pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,.90) 0%,  rgba(255,255,255,.32) 22%,
+    rgba(255,255,255,0)   46%, rgba(255,255,255,0)   54%,
+    rgba(255,255,255,.32) 78%, rgba(255,255,255,.90) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+/* 墨黑卡上的玻璃反过来用深色底:那张卡的玻璃压在亮柠檬色模版上,
+   浅色玻璃 + 白字会糊成一团看不清 */
+.project-card--ink .pc-glass { background: rgba(14,17,22,.45); }
+/* .22 → .16:文本线是纹理不是内容,退到「看得见但不抢眼」。浅底那四处(绿卡两张套件卡、
+   DOCX、沙卡白文件)对所在底的对比度由 1.37~1.41 收到 1.24~1.27。
+   ink 卡窗口里的模版缩略图不吃这个值 —— 它们有自己的 .5(见 .pc-tpl .pc-bar)。 */
+.pc-bar { display: block; height: 5px; border-radius: 3px; background: currentColor; opacity: .16; }
+
+/* ── 插画动效 ──────────────────────────────────────────────────────
+   两类:① 常驻的轻微呼吸(玻璃药丸上下浮、BUILDING 明暗闪);
+        ② 悬停时的抬起与散开。全部只动 transform / opacity —— 不触发回流,
+   整段跑在合成器上,所以能一直顺。悬停那组连同它的 transition 一起关在
+   `hover:hover` 里:触屏上 :hover 会粘住,不该让卡片停在散开的姿势。 */
+@keyframes pc-float { 0%,100% { transform: translate(-50%,0); } 50% { transform: translate(-50%,-5px); } }
+@keyframes pc-blink { 0%,100% { opacity: .42; } 50% { opacity: .9; } }
+/* 这颗不是居中定位的,不能套 pc-float(那条里带着 translate(-50%)) */
+@keyframes pc-float-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.pc-share { animation: pc-float 3.8s ease-in-out infinite; }
+.pc-api   { animation: pc-float-y 4.2s ease-in-out infinite; }
+.pc-win__bar span   { animation: pc-blink 2.4s ease-in-out infinite; }
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .pc-tpl, .pc-kit, .pc-doc, .pc-tile { transition: transform 520ms var(--ease-out); }
+  /* 三张模版错开 60ms 依次抬起,形成一次很轻的波 */
+  .project-card:hover .pc-tpl--a { transform: translateY(-7px); }
+  .project-card:hover .pc-tpl--b { transform: translateY(-11px); transition-delay: 60ms; }
+  .project-card:hover .pc-tpl--c { transform: translateY(-5px);  transition-delay: 120ms; }
+  /* 两张技能卡朝相反方向让开一点,把后面那张露出来 */
+  .project-card:hover .pc-kit--back  { transform: translate(-8px,-4px); }
+  .project-card:hover .pc-kit--front { transform: translate(8px,-9px); }
+  /* 三份文稿散开;基础的旋转与居中位移要一起写进来,否则会被整条覆盖掉 */
+  .project-card:hover .pc-doc--ppt  { transform: rotate(-9deg) translate(-6px,-5px); }
+  .project-card:hover .pc-doc--word { transform: translateX(-50%) translateY(-9px); }
+  .project-card:hover .pc-doc--xls  { transform: rotate(9deg) translate(6px,-5px); }
+  /* 线内那两块文件轻轻浮起,像被核心托着 */
+  .project-card:hover .pc-tile--photo { transform: translateY(-6px); }
+  .project-card:hover .pc-tile--doc   { transform: translateY(-9px); transition-delay: 60ms; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pc-share, .pc-api, .pc-win__bar span { animation: none; }
+}
+
+/* ── 01 网页交付:浏览器窗口 + 模版缩略 + 玻璃分享条 ─────────────── */
+.pc-win {
+  position: absolute; left: var(--pc-pad); right: var(--pc-pad); top: 0; bottom: 0;
+  background: var(--pc-ink);
+  border: 1px solid rgba(255,255,255,.10); border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+.pc-win__bar {
+  display: flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 12px;
+  background: rgba(255,255,255,.05);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.pc-win__bar i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,.22); }
+.pc-win__bar i:nth-child(1) { background: #FF5F57; }
+.pc-win__bar i:nth-child(2) { background: #FEBC2E; }
+.pc-win__bar i:nth-child(3) { background: #28C840; }
+.pc-win__bar span { margin-left: auto; font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; color: rgba(255,255,255,.42); }
+.pc-win__body { display: flex; gap: 8px; padding: 14px 12px; }
+.pc-tpl { flex: 1; height: 110px; border-radius: 8px; padding: 8px; color: #fff; }
+.pc-tpl--a { background: linear-gradient(160deg, var(--pc-acc) 0%, #5B3FD0 100%); }
+.pc-tpl--b { background: var(--pc-lime); color: #14171C; }
+.pc-tpl--c { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); }
+/* opacity 显式钉回 .22:基类由 .22 降到 .16 是给套件卡/文稿那几处的,
+   窗口里这些缩略图不在那次调整范围内,不跟着弱下去(第一条另有 .5) */
+.pc-tpl .pc-bar + .pc-bar { margin-top: 5px; width: 72%; opacity: .22; }
+.pc-tpl .pc-bar:first-child { width: 46%; opacity: .5; }
+.pc-share {
+  position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 7px; white-space: nowrap;
+  padding: 9px 15px; border-radius: 999px;
+  font-size: 11px; letter-spacing: .02em; color: #fff;
+}
+
+/* ── 02 技能市场:两张技能套件卡叠压,前面那张是玻璃 ──────────────── */
+/* 两张卡都往下出血、被卡片底边裁掉一截 —— 参考稿就是这个「露出上半截」的取景 */
+.pc-kit {
+  position: absolute; width: 60%;
+  padding: 13px 13px 15px;
+  border-radius: 14px 14px 0 0;
+}
+/* 比卡底更亮的一档,用户指定 #E6EEE9(回到绿系,原来是纯白)。对卡底 #C7DED0 是 1.20 ——
+   比白的 1.42 收了一档,分层更轻。上面的文本线随之由 rgb(213,219,216) 压到 rgb(194,205,198),
+   对所在底仍有 1.38,没被吃掉。 */
+.pc-kit--back  { left: var(--pc-pad); top: 18px; bottom: -40px; background: #E6EEE9; }
+/* 前面这张压在白色套件卡上,原来只靠玻璃描边分层、贴得太死。补一道很淡的柔影
+   把它托起来:贴身接触影 + 大扩散,蓝青色调,跟本页办公文稿/装饰卡那套同一家族。
+   往下出血的那截会被卡片的 overflow:hidden 裁掉,不会漏到卡外。 */
+.pc-kit--front {
+  right: var(--pc-pad); top: 52px; bottom: -40px;
+  box-shadow: 0 2px 5px rgba(30,70,90,.05), 0 8px 20px rgba(30,70,90,.09);
+}
+.pc-kit__icon {
+  width: 30px; height: 30px; border-radius: 9px;
+  display: grid; place-items: center;
+  background: var(--pc-ink); color: #fff;
+}
+.pc-kit--back .pc-kit__icon { background: var(--pc-acc-2); }   /* 图标一并回到绿系 */
+.pc-kit b  { display: block; margin-top: 11px; font-size: 12px; font-weight: 600; color: #14171C; }
+.pc-kit em { display: block; margin-top: 3px; font-family: var(--font-mono); font-size: 8px; font-style: normal; letter-spacing: .14em; color: rgba(20,23,28,.45); }
+/* 文本线吃卡片自己的 --pc-muted,不再用中性近黑 —— 见 .pc-tile--doc .pc-bar 那段的说明 */
+.pc-kit .pc-bar { color: var(--pc-muted); margin-top: 7px; }
+.pc-kit .pc-bar:last-child { width: 58%; }
+
+/* ── 03 办公产物:三份文稿散开,中间实心、右侧玻璃 ──────────────────
+   宽度全部走百分比(跟技能套件卡同一套路),卡片变宽时三份文稿一起变宽、
+   相对位置不变;用固定 px 的话宽屏上它们会被拉开、中间空一大块。 */
+/* 往卡片外多探 28px(卡片 overflow:hidden 会裁掉):两侧那两份是转过角度的,
+   贴着底边放的话外侧下角会翘起来、露出底下的卡片背景。28 是按最坏情况算的 ——
+   单列时卡片最宽(≈830px)、文稿半宽约 128px,悬停转到 9° 再上抬 5px,翘起 ≈25px。
+   高度同步加 28,顶边位置不变。 */
+/* 宽度带下限:纯 31% 在四列窄卡(277px)上只有 86px,配 144/172 的高度就是 0.60/0.50 的
+   长宽比 —— 细成条了。max(140px, 31%) 让宽卡维持原样(31% 先超过 140,交叉点在卡宽 452),
+   窄卡兜到 140:侧稿 140×164=0.85、主稿 140×192=0.73(A4 是 0.71),同时三份自然叠得更紧。
+   高度 144→164 / 172→192 是为了让这张插图的可见展位追平另外三张(原 150,其余 168/170/186)。 */
+.pc-doc {
+  position: absolute; bottom: -28px;
+  width: max(140px, 31%); height: 164px;
+  border-radius: 10px 10px 0 0;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(30,70,90,.10);
+  padding: 10px;
+  color: #14171C;
+}
+.pc-doc__tag { font-family: var(--font-mono); font-size: 8px; letter-spacing: .1em; color: rgba(20,23,28,.42); }
+.pc-doc--ppt  { left: 5%; transform: rotate(-5deg); transform-origin: bottom center; background: var(--pc-ink); color: #fff; }
+.pc-doc--ppt .pc-doc__tag { color: rgba(255,255,255,.5); }
+.pc-doc--ppt .pc-slide { margin-top: 8px; height: 34px; border-radius: 5px; background: linear-gradient(135deg,var(--pc-acc),#5B3FD0); }
+/* 这条是白线压近黑底,天生比另外四处响得多:同样 .16 时它是 1.63,别的只有 1.24~1.27。
+   单独压到 .08 才和它们一样弱(1.25)。要它回到「深底上更显眼」就把这行删掉。 */
+.pc-doc--ppt .pc-bar { opacity: .08; }
+/* 中间这份当主角:比两侧高一截、再往上探一点,三份合起来才有个尖 */
+.pc-doc--word { left: 50%; transform: translateX(-50%); z-index: 1; height: 192px; bottom: -22px; }
+/* 表格那份改成玻璃面板:这张卡原本只有一颗玻璃药丸,材质分量太轻;
+   做成玻璃后能透出底下的淡紫卡底与旁边那份文稿的边,跟技能卡「一实一玻璃」同一套路。 */
+.pc-doc--xls  {
+  right: 5%; transform: rotate(5deg); transform-origin: bottom center;
+  background: rgba(255,255,255,.42);
+  backdrop-filter: blur(10px);
+}
+.pc-doc .pc-bar { margin-top: 7px; }
+/* 只给 DOCX 那份换色 —— PPTX 是深底浅线(color:#fff)换了会看不见,XLSX 用的是网格不是线 */
+.pc-doc--word .pc-bar { color: var(--pc-muted); }
+.pc-doc .pc-bar:nth-of-type(even) { width: 70%; }
+.pc-grid-mini { margin-top: 9px; display: grid; grid-template-columns: repeat(3,1fr); gap: 3px; }
+.pc-grid-mini i { height: 12px; border-radius: 2px; background: rgba(20,23,28,.08); }
+.pc-grid-mini i:nth-child(4) { background: var(--pc-acc-2); opacity: .7; }
+
+/* ── 04 本地优先:虚线框圈出「设备这条线」,文件与核心都在线内,
+      只有模型 API 那颗标签是从线外探进来的 —— 这就是这张卡要说的事。 ── */
+.pc-local { position: absolute; inset: 0 var(--pc-pad); }
+.pc-local__fence {
+  position: absolute; left: 0; right: 0; top: 16px; bottom: -34px;
+  border: 1.5px dashed rgba(20,23,28,.24);
+  border-radius: 18px;
+}
+.pc-local__tag {                            /* 压在虚线上的小标,底色盖掉一段线 */
+  position: absolute; left: 14px; top: 9px;
+  padding: 0 7px; background: var(--pc-bg);
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: .14em;
+  color: rgba(20,23,28,.45);
+}
+/* 三块(黑核 / 渐变照片 / 白文件)是同一组、同一量级(46~50px 高),圆角必须同一个值,
+   原来 15 / 10 / 10 三档看着就是没对齐。统一取 12px:黑核收 3、两块瓷砖各放 2,改动最小。
+   想更方一点就三处一起回 10,想更圆就一起上 15 —— 别只动其中一处。 */
+.pc-local__core {
+  position: absolute; left: 5%; top: 46px;
+  width: 50px; height: 50px; border-radius: 12px;
+  background: var(--pc-ink);
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.pc-local__core i { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.pc-tile { position: absolute; border-radius: 12px; }   /* 与黑核同一档,见上面那段 */
+/* 两块文件用 left+right 定位、不写死宽度:卡片变宽时它们跟着长,
+   玻璃标签才能始终压在照片右缘上(写死宽度的话宽屏上标签会飘到空底上) */
+/* top 跟黑核对齐(同为 46、同为 50 高),两块就在同一条横线上、底边也齐在 96;
+   下面那块白文件 top:102 不动 —— 这样它离黑核和照片的下缘都是 6px,一条均匀的横沟。 */
+.pc-tile--photo { left: 30%; right: 8%;  top: 46px;  height: 50px;
+  background: linear-gradient(140deg,#F2C6A0,#E4A9C6 55%,#9FC4EA); }
+.pc-tile--doc   { left: 30%; right: 22%; top: 102px; height: 46px;
+  background: #fff; padding: 10px; color: #14171C; }
+/* 两条文本线要拉开:.pc-bar 自己不带外边距,挨着放会糊成一条粗线 */
+.pc-tile--doc .pc-bar + .pc-bar { margin-top: 8px; }
+/* 白色子卡上的文本线原来一律是中性近黑 #14171C @22%(在白底上是 rgb(203,204,205)),
+   一块冷灰,跟薄荷/淡紫/沙三张彩卡都不搭。改吃各卡自己的 --pc-muted —— 它是卡底色的
+   去饱和版,同样 22% 下 mint 出 rgb(213,219,216) 淡绿灰、lilac 出 rgb(220,218,227) 淡紫灰、
+   sand 出 rgb(219,217,214) 暖灰,三者都比原来更浅(对白底 1.55 → 1.38~1.42),既弱下来
+   又各自跟自己卡片同色系。深底上的线(ink 卡的模版缩略图、PPTX 那份)不动,那是浅线压深底。 */
+.pc-tile--doc .pc-bar { color: var(--pc-muted); }
+.pc-api {                                   /* 玻璃标签:压着照片右缘,一半探出虚线外 */
+  /* top 跟着照片一起下移 6(52→58),它是居中骑在照片上的,照片动了它不动就会偏上 */
+  position: absolute; right: -6px; top: 58px;
+  display: flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 8px 12px; border-radius: 999px;
+  font-size: 11px; color: #14171C;
+  box-shadow: 0 8px 20px rgba(30,70,90,.14);
+}
+
+/* ─── Services ───────────────────────────────────────────────────── */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-6);
+}
+.service-item {
+  border-top: 2px solid var(--fg);
+  padding-top: var(--space-5);
+}
+.service-item .service-icon {
+  display: block;
+  width: 26px; height: 26px;
+  margin-bottom: var(--space-3);
+  color: var(--fg);                         /* 描边取 currentColor,跟着文字色走 */
+}
+.service-item .service-icon svg { display: block; width: 100%; height: 100%; }
+.service-item h3 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-2);
+}
+.service-item p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* ─── CTA ────────────────────────────────────────────────────────── */
+.cta-section {
+  background: var(--fg);
+  color: var(--bg);
+  text-align: center;
+  padding: var(--space-20) var(--space-6);
+}
+.cta-section .section-title { color: var(--bg); }
+.cta-section .cta-text {
+  font-size: 17px;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: var(--space-8);
+  max-width: 480px;
+  margin-left: auto; margin-right: auto;
+}
+.cta-btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 14px 36px;
+  background: var(--accent);
+  color: var(--accent-on);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background 200ms var(--ease-out);
+}
+.cta-btn:hover { background: #1d4ed8; }
+
+/* ─── 胶囊按钮交互状态:hover 悬停 / :active 按下 / :focus-visible 键盘选中 ─── */
+.bkv-cta, .bkv-cta2, .cta-pill {
+  transition: background-color 180ms var(--ease-out),
+              border-color 180ms var(--ease-out),
+              box-shadow 180ms var(--ease-out),
+              transform 120ms var(--ease-out);
+}
+/* 黑底实色胶囊(顶部「下载桌面端」):hover 提亮一档 + 轻微浮起投影,按下回沉 */
+.bkv-cta:hover { background: var(--fg-2) !important; box-shadow: 0 6px 16px rgba(0,0,0,0.16); }
+.bkv-cta:active { background: #000000 !important; box-shadow: none; transform: translateY(1px); }
+/* 白底描边胶囊(顶部「使用网页端」):hover 底色转浅灰、描边加深,按下再深一档 */
+.bkv-cta2:hover { background-color: var(--border-soft) !important; border-color: #cccccc !important; }
+.bkv-cta2:active { background-color: var(--border) !important; transform: translateY(1px); }
+/* 深色 CTA 区白胶囊(底部「下载桌面端」):hover 微降白度、描边转纯白,按下再沉 */
+.cta-pill:hover { background-color: #ececec !important; border-color: #ffffff !important; }
+.cta-pill:active { background-color: #dcdcdc !important; transform: translateY(1px); }
+/* 键盘选中(焦点环):三颗按钮统一 accent 蓝描边,提升可访问性 */
+.bkv-cta:focus-visible, .bkv-cta2:focus-visible, .cta-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────── */
+footer {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--space-12) var(--space-4);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: var(--space-4);
+  font-size: 13px;
+  color: var(--meta);
+  border-top: 1px solid var(--border-soft);
+}
+footer .footer-links { display: flex; gap: var(--space-6); }
+footer a { color: var(--muted); text-decoration: none; transition: color 200ms var(--ease-out); }
+footer a:hover { color: var(--fg); }
+/* 备案号:合规信息,跟版权行同灰(--meta),不走 footer a 的 --muted —— 否则会比版权还深、比它抢眼 */
+footer .footer-beian a { color: inherit; }
+footer .footer-beian a:hover { color: var(--fg); }
+
+/* ─── Responsive ─────────────────────────────────────────────────── */
+/* 能力卡三档 1280 / 640 / 400:四列 → 两列 → 单列。
+   卡片数是 4,每一档都能整除,不会出现「最后一排孤零零一张」——
+   哪天卡片数变成奇数,两列那档要一起去掉,否则又会落单。 */
+@media (max-width: 1280px) {
+  .projects-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 920px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-8);
+  }
+  .hero-collage { aspect-ratio: 4/3; max-height: 360px; }
+  .manifesto-grid { grid-template-columns: 1fr; }
+  .services-grid { grid-template-columns: repeat(2, 1fr); }
+  .section-inner { padding: var(--space-12) var(--space-4); }
+}
+@media (max-width: 640px) {
+  /* 窄屏放弃百分比缩进,改固定边距,否则悬浮态被压得只剩中间一小截 */
+  nav.scrolled { left: 12px; right: 12px; }
+  /* 展开菜单跟胶囊是同一块玻璃:底色 / 模糊 / 投影 / 上下亮的渐变环全走上面那套,
+     配方与 nav.scrolled + nav::before 同源 —— 改材质记得两处一起改。
+     离胶囊留 8px:两块玻璃贴在一起会在接缝处叠出双描边和双投影。 */
+  nav .nav-links {
+    display: none;
+    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+    background-color: var(--nav-sheet-fill);
+    background-blend-mode: luminosity;
+    backdrop-filter: blur(var(--nav-sheet-blur));
+    box-shadow: inset 0 1px 1px rgba(255,255,255,.1),
+                0 2px 6px  rgba(30,70,90,.015),
+                0 12px 64px rgba(30,70,90,.10);
+    flex-direction: column;
+    padding: var(--space-4) var(--space-6);
+    gap: var(--space-4);
+    border-radius: 18px;                      /* 配合悬浮态的圆角,展开面板不再是方角 */
+  }
+  nav .nav-links::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: inherit;
+    padding: var(--nav-ring-width);
+    pointer-events: none;
+    background: linear-gradient(180deg,
+      rgba(255,255,255,.45) 0%,  rgba(255,255,255,.15) 20%,
+      rgba(255,255,255,0)   40%, rgba(255,255,255,0)   60%,
+      rgba(255,255,255,.15) 80%, rgba(255,255,255,.45) 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+  nav .nav-links.open { display: flex; }
+  .nav-toggle { display: block; }
+  .projects-grid { grid-template-columns: 1fr; }
+  /* 单列竖着堆,不需要等高,去掉最小高度免得说明和插画之间空一大截 */
+  .project-card { min-height: 0; }
+  .services-grid { grid-template-columns: 1fr; }
+  .hero { min-height: auto; padding: 100px var(--space-4) var(--space-12); }
+  .hero-text h1 { font-size: clamp(36px, 10vw, 52px); }
+  .hero-collage { max-height: 280px; }
+}
+</style>
+<style data-bk-layout-style="true">[data-bk-layout]{display:grid!important;}
+[data-bk-layout='cols-2']{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+[data-bk-layout='cols-3']{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+[data-bk-layout='list']{grid-template-columns:minmax(0,1fr)!important;}
+[data-bk-layout] > :not([data-bk-layout-item]){grid-column:1/-1!important;}
+@media (max-width:880px){[data-bk-layout]{grid-template-columns:minmax(0,1fr)!important;}}</style></head>
+<body style="">
+
+<!-- ═══════════ 水波背景画布(复用自 blink:img_bg4 + 点击涟漪)═══════════ -->
+<div id="app"></div>
+
+<!-- ═══════════ Pull Quote 1 ═══════════ -->
+<!-- ═══════════ Pull Quote 2 ═══════════ -->
+<!-- ═══════════ Sticky Nav ═══════════ -->
+<nav id="navbar" data-bk-id="bk-block-1">
+  <a href="#" class="logo" aria-label="blink">
+    <svg width="88" height="32" viewBox="0 0 88 32" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g clip-path="url(#clip0_577_7355)">
+<path d="M32.864 8.95489C32.864 8.6029 33.064 8.4269 33.464 8.4269H39.8239C41.5519 8.4269 42.8399 8.7789 43.6879 9.48289C44.5359 10.1709 44.9599 11.0749 44.9599 12.1949C44.9599 12.9789 44.7279 13.6828 44.2639 14.3068C43.7999 14.9308 43.0079 15.3788 41.8879 15.6508C42.4159 15.7468 42.9119 15.8908 43.3759 16.0828C43.8559 16.2588 44.2719 16.4988 44.6239 16.8028C44.9759 17.0908 45.2559 17.4508 45.4639 17.8828C45.6719 18.3148 45.7759 18.8268 45.7759 19.4188C45.7759 20.2988 45.5599 21.0188 45.1279 21.5788C44.6959 22.1388 44.1439 22.5708 43.4719 22.8748C42.8159 23.1788 42.0959 23.3868 41.3119 23.4987C40.5279 23.6107 39.7839 23.6667 39.0799 23.6667H33.464C33.064 23.6667 32.864 23.4907 32.864 23.1388C32.864 22.7868 33.056 22.5948 33.44 22.5628L34.304 22.4668C34.672 22.4188 34.864 22.2108 34.88 21.8428C34.88 21.4588 34.88 21.0748 34.88 20.6908C34.896 20.2908 34.904 19.8908 34.904 19.4908V12.6269C34.904 12.2269 34.896 11.8349 34.88 11.4509C34.88 11.0509 34.88 10.6509 34.88 10.2509C34.848 9.88289 34.656 9.67489 34.304 9.62689L33.44 9.53089C33.056 9.48289 32.864 9.29089 32.864 8.95489ZM37.7359 22.4908H38.7679C40.3359 22.4908 41.4239 22.2188 42.0319 21.6748C42.6559 21.1308 42.9679 20.3708 42.9679 19.3948C42.9679 18.3388 42.6479 17.5628 42.0079 17.0668C41.3679 16.5548 40.2959 16.2988 38.7919 16.2988H37.6879V19.4908C37.6879 20.0028 37.6879 20.5068 37.6879 21.0028C37.7039 21.4988 37.7199 21.9948 37.7359 22.4908ZM39.1039 9.60289H37.7359C37.7199 10.0669 37.7039 10.5309 37.6879 10.9949C37.6879 11.4429 37.6879 11.8989 37.6879 12.3629V15.1468H38.7199C39.9679 15.1468 40.8719 14.9228 41.4319 14.4748C42.0079 14.0108 42.2959 13.2909 42.2959 12.3149C42.2959 11.3389 42.0399 10.6429 41.5279 10.2269C41.0159 9.81089 40.2079 9.60289 39.1039 9.60289ZM51.4739 21.9148C51.4739 22.2828 51.6499 22.4988 52.0019 22.5628L52.5059 22.6588C52.8579 22.7228 53.0339 22.9068 53.0339 23.2108C53.0339 23.5147 52.8339 23.6667 52.4339 23.6667H47.85C47.45 23.6667 47.25 23.5147 47.25 23.2108C47.25 22.9228 47.434 22.7388 47.802 22.6588L48.33 22.5628C48.682 22.4988 48.858 22.2828 48.858 21.9148C48.874 21.4028 48.882 20.8908 48.882 20.3788C48.898 19.8668 48.906 19.3548 48.906 18.8428V9.67489C48.906 9.30689 48.722 9.09889 48.354 9.05089L47.634 8.95489C47.266 8.90689 47.082 8.7389 47.082 8.4509C47.082 8.1629 47.258 7.9709 47.61 7.8749L50.7779 7.05891C50.8579 7.02691 50.9219 7.01091 50.9699 7.01091C51.0339 7.01091 51.0979 7.01091 51.1619 7.01091C51.2739 7.01091 51.3459 7.02691 51.3779 7.05891C51.4739 7.12291 51.5219 7.31491 51.5219 7.63491L51.4499 10.4189V18.8428C51.4499 19.3548 51.4499 19.8668 51.4499 20.3788C51.4659 20.8908 51.4739 21.4028 51.4739 21.9148ZM58.5542 21.9388C58.5702 22.2748 58.7542 22.4828 59.1062 22.5628L59.5142 22.6348C59.8662 22.7148 60.0422 22.9068 60.0422 23.2108C60.0422 23.5147 59.8422 23.6667 59.4422 23.6667H55.0263C54.6263 23.6667 54.4263 23.5147 54.4263 23.2108C54.4263 22.9228 54.6103 22.7388 54.9783 22.6588L55.4583 22.5628C55.8103 22.4828 55.9943 22.2748 56.0103 21.9388V17.6908C56.0103 17.3708 56.0103 17.0828 56.0103 16.8268C56.0103 16.5708 56.0023 16.3308 55.9863 16.1068C55.9703 15.9788 55.9623 15.8508 55.9623 15.7228C55.9623 15.5948 55.9623 15.4668 55.9623 15.3388C55.9303 14.9708 55.7383 14.7628 55.3863 14.7148L54.8103 14.6428C54.4423 14.5948 54.2583 14.4268 54.2583 14.1388C54.2583 13.8828 54.4183 13.6908 54.7383 13.5628L57.8582 12.4349C57.9382 12.4029 58.0102 12.3789 58.0742 12.3629C58.1382 12.3469 58.2022 12.3389 58.2662 12.3389C58.3462 12.3389 58.4102 12.3629 58.4582 12.4109C58.5702 12.5069 58.6262 12.6989 58.6262 12.9869L58.5542 15.7228V21.9388ZM57.2582 10.0829C56.7463 10.0829 56.3223 9.93088 55.9863 9.62689C55.6663 9.32289 55.5063 8.92289 55.5063 8.4269C55.5063 7.93091 55.6663 7.53091 55.9863 7.22691C56.3223 6.92291 56.7463 6.77092 57.2582 6.77092C57.7542 6.77092 58.1622 6.92291 58.4822 7.22691C58.8182 7.53091 58.9862 7.93091 58.9862 8.4269C58.9862 8.92289 58.8182 9.32289 58.4822 9.62689C58.1622 9.93088 57.7542 10.0829 57.2582 10.0829ZM72.6659 21.9388C72.6819 22.2748 72.8659 22.4828 73.2179 22.5628L73.6259 22.6348C73.9779 22.7148 74.1539 22.9068 74.1539 23.2108C74.1539 23.5147 73.9539 23.6667 73.5539 23.6667H69.1379C68.7379 23.6667 68.5379 23.5147 68.5379 23.2108C68.5379 22.9068 68.7139 22.7228 69.0659 22.6588L69.5459 22.5628C69.8979 22.4828 70.0819 22.2748 70.0979 21.9388V16.7068C70.0979 15.7468 69.9779 15.0668 69.7379 14.6668C69.5139 14.2508 69.0979 14.0428 68.4899 14.0428C67.994 14.0428 67.514 14.1628 67.05 14.4028C66.602 14.6428 66.122 15.0028 65.61 15.4828V21.9388C65.626 22.2748 65.81 22.4828 66.162 22.5628L66.594 22.6588C66.946 22.7228 67.122 22.9068 67.122 23.2108C67.122 23.5147 66.922 23.6667 66.522 23.6667H62.058C61.658 23.6667 61.458 23.5147 61.458 23.2108C61.458 22.9228 61.642 22.7388 62.01 22.6588L62.514 22.5628C62.866 22.4828 63.05 22.2748 63.066 21.9388V17.5948C63.066 17.2748 63.066 16.9868 63.066 16.7308C63.066 16.4748 63.058 16.2508 63.042 16.0588C63.026 15.9308 63.018 15.8108 63.018 15.6988C63.018 15.5868 63.018 15.4668 63.018 15.3388C62.986 14.9708 62.794 14.7628 62.442 14.7148L61.866 14.6428C61.498 14.5948 61.314 14.4268 61.314 14.1388C61.314 13.8668 61.474 13.6668 61.794 13.5388L64.578 12.4589C64.722 12.3949 64.866 12.3629 65.01 12.3629C65.106 12.3629 65.17 12.3789 65.202 12.4109C65.33 12.4909 65.402 12.6749 65.418 12.9629L65.538 14.3788C66.146 13.6748 66.762 13.1549 67.386 12.8189C68.01 12.4669 68.7139 12.2909 69.4979 12.2909C70.5539 12.2909 71.3459 12.6189 71.8739 13.2749C72.4019 13.9148 72.6659 14.9708 72.6659 16.4428V21.9388ZM86.102 22.0348C86.262 22.2908 86.478 22.4508 86.75 22.5148L87.374 22.6348C87.726 22.7148 87.902 22.9068 87.902 23.2108C87.902 23.5147 87.702 23.6667 87.302 23.6667H84.638C84.334 23.6667 84.094 23.5307 83.918 23.2588L80.8461 18.1468L79.5501 19.4668C79.5501 19.8508 79.5501 20.2508 79.5501 20.6668C79.5661 21.0828 79.5741 21.4988 79.5741 21.9148C79.6061 22.2828 79.7901 22.4988 80.1261 22.5628L80.6541 22.6588C81.0221 22.7388 81.2061 22.9228 81.2061 23.2108C81.2061 23.5147 81.0061 23.6667 80.6061 23.6667H75.9981C75.5981 23.6667 75.3981 23.5147 75.3981 23.2108C75.3981 22.9228 75.5821 22.7388 75.9501 22.6588L76.4781 22.5628C76.8301 22.4988 77.0061 22.2828 77.0061 21.9148C77.0221 21.4028 77.0301 20.8828 77.0301 20.3548C77.0461 19.8108 77.0541 19.3068 77.0541 18.8428V9.67489C77.0541 9.30689 76.8701 9.09889 76.5021 9.05089L75.7821 8.95489C75.4141 8.90689 75.2301 8.7389 75.2301 8.4509C75.2301 8.1629 75.3981 7.9709 75.7341 7.8749L78.8781 7.05891C78.9581 7.02691 79.0221 7.01091 79.0701 7.01091C79.1341 7.01091 79.1981 7.01091 79.2621 7.01091C79.3741 7.01091 79.4461 7.02691 79.4781 7.05891C79.5741 7.12291 79.6221 7.31491 79.6221 7.63491L79.5501 10.4189V18.0508L83.0061 14.5708C83.1821 14.3948 83.2461 14.2348 83.1981 14.0908C83.1661 13.9308 83.0381 13.8348 82.8141 13.8028L82.5021 13.7548C82.1341 13.7068 81.9501 13.5148 81.9501 13.1789C81.9501 12.8589 82.1501 12.6989 82.5501 12.6989H86.63C87.03 12.6989 87.23 12.8589 87.23 13.1789C87.23 13.5148 87.046 13.7068 86.678 13.7548L85.502 13.9228C85.246 13.9708 85.014 14.0828 84.806 14.2588L82.6461 16.3708L86.102 22.0348Z" fill="black"></path>
+<rect y="1" width="28" height="28" fill="url(#pattern0_577_7355)"></rect>
+</g>
+<defs>
+<pattern id="pattern0_577_7355" patternContentUnits="objectBoundingBox" width="1" height="1">
+<use xlink:href="#image0_577_7355" transform="scale(0.0119048)"></use>
+</pattern>
+<clipPath id="clip0_577_7355">
+<rect width="87.9991" height="31.9997" fill="white"></rect>
+</clipPath>
+<image id="image0_577_7355" width="84" height="84" preserveAspectRatio="none" xlink:href="data:image/png;base64,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"></image>
+</defs>
+</svg>
+  </a>
+  <button class="nav-toggle" id="navToggle" aria-label="菜单">☰</button>
+  <ul class="nav-links" id="navLinks" style="font-weight: 400;">
+    <li><a href="#top" style="color: var(--fg); font-weight: 600;">介绍</a></li>
+    <li><a href="#projects" style="color: var(--fg); font-weight: 600;">产品</a></li>
+    <li><a href="#contact" style="color: var(--fg); font-weight: 600;">下载</a></li>
+    <li><a href="#footer" style="color: var(--fg); font-weight: 600;">联系</a></li>
+  </ul>
+</nav>
+
+<!-- ═══════════ Hero ═══════════ -->
+<section data-bk-block="prose" data-bk-variant="prose-center" style="--bkv-bg: transparent; --fg: rgb(17, 17, 17); --muted: rgb(107, 107, 107); --serif: &quot;Iowan Old Style&quot;, Charter, &quot;Times New Roman&quot;, Georgia, serif; padding-top: 148px;" id="top" data-bk-id="bk-block-2">
+<style>
+[data-bk-variant='prose-center']{background:var(--bkv-bg,var(--bg,#fff));color:var(--fg,#111);font-family:inherit;padding:clamp(56px,8vw,104px) clamp(24px,5vw,64px);}
+[data-bk-variant='prose-center'] a{text-decoration:none;color:inherit;}
+[data-bk-variant='prose-center'] .bkv-sub{margin:0 0 14px;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent,#4457ff);font-weight:600;}
+[data-bk-variant='prose-center'] .bkv-title{margin:0 0 16px;font-family:var(--serif,inherit);font-weight:700;line-height:1.1;letter-spacing:-.01em;color:var(--fg,#111);}
+[data-bk-variant='prose-center'] .bkv-body{margin:0 0 26px;font-size:16px;line-height:1.7;color:var(--muted,#555);max-width:56ch;}
+[data-bk-variant='prose-center'] .bkv-acts{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+[data-bk-variant='prose-center'] .bkv-cta{background:var(--accent,#4457ff);color:var(--accent-contrast,#fff);border-radius:999px;padding:12px 24px;font-size:14px;font-weight:600;display:inline-block;}
+[data-bk-variant='prose-center'] .bkv-cta2{border:1px solid var(--border,rgba(0,0,0,.18));color:var(--fg,#111);border-radius:999px;padding:11px 22px;font-size:14px;font-weight:600;display:inline-block;}
+[data-bk-variant='prose-center'] .bkv-title{font-size:clamp(26px,3.4vw,40px);}
+[data-bk-variant='prose-center'] .bkv-body{margin:0 0 18px;}
+[data-bk-variant='prose-center'] .bkv-acts{margin-top:10px;}
+[data-bk-variant='prose-center'] .bkv-media{margin:0;}
+[data-bk-variant='prose-center'] .bkv-media > img{width:100%;height:auto;display:block;border-radius:var(--radius-l,16px);border:1px solid var(--border,rgba(0,0,0,.12));}
+[data-bk-variant='prose-center']{text-align:center;}
+[data-bk-variant='prose-center'] .bkv-copy{max-width:680px;margin:0 auto;}
+[data-bk-variant='prose-center'] .bkv-body{margin-left:auto;margin-right:auto;}
+[data-bk-variant='prose-center'] .bkv-acts{justify-content:center;}
+[data-bk-variant='prose-center'] .bkv-media{margin:clamp(28px,4vw,48px) auto 0;max-width:860px;}
+[data-bk-variant='prose-center'] .bkv-media > img{max-height:clamp(320px,46vh,520px);object-fit:cover;}
+</style>
+<div class="bkv-copy" data-bk-id="bk-block-2-1" style="max-width: 880px;"><h2 class="bkv-title" data-bk-slot="title" style="font-weight: 400; font-size: 70px; color: var(--fg); margin-bottom: 24px; letter-spacing: 1px;">本地设计智能体</h2><p class="bkv-body" data-bk-slot="body" style="max-width: 640px; color: var(--muted);">Blink 是一个本地优先的 AI 设计智能体。内置各类大厂的设计系统、丰富的设计模板。支持生成网页、幻灯片、移动端原型、图片——全部运行在你自己的电脑上。</p><div class="bkv-acts" style="margin-top: 32px;" data-bk-id="bk-block-2-1-2"><a href="./download.html" class="bkv-cta" style="display: inline-flex; align-items: center; gap: 8px; background: var(--fg,#111111); font-family: &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, sans-serif;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>下载桌面端</a></div></div>
+<div class="hero-deco">
+<figure class="bkv-media" data-bk-slot="media"><img src="assets/home-preview.png" alt="Blink 主页视觉" width="2160" height="1440" fetchpriority="high" decoding="async" style="width: 100%; height: auto; display: block; max-height: none; object-fit: contain; border-style: none; box-shadow: none; border-radius: min(16px, 1.86vw); background-color: #ffffff; filter: drop-shadow(rgba(0, 38, 55, 0.08) 0px 12px 60px);"></figure>
+  <div class="deco deco--a"><span class="deco__label">设计模版</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, serif; font-size: 17px;">一键复刻成稿</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n l1" x="0" y="2" width="94" height="9" rx="4.5"></rect><rect class="n l2" x="0" y="15.5" width="76" height="9" rx="4.5"></rect><rect class="a l3" x="0" y="29" width="58" height="9" rx="4.5"></rect></svg></span></div>
+  <div class="deco deco--b"><span class="deco__label">本地运行</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, serif;">数据不出设备</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n" x="0" y="3" width="46" height="28" rx="9"></rect><circle class="a dot" cx="23" cy="17" r="6"></circle><rect class="n b1" x="58" y="8" width="62" height="7" rx="3.5"></rect><rect class="n b2" x="58" y="19" width="44" height="7" rx="3.5"></rect></svg></span></div>
+  <div class="deco deco--c"><span class="deco__label">产物交付</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, serif; font-size: 15px;">一键导出分享</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n" x="0" y="2" width="30" height="30" rx="9"></rect><rect class="n" x="40" y="15.5" width="34" height="3" rx="1.5"></rect><rect class="n" x="84" y="2" width="30" height="30" rx="9"></rect><circle class="a send" cx="45" cy="17" r="4.5"></circle></svg></span></div>
+</div>
+</section>
+
+<div class="pull-quote reveal" style="border-style: none;">
+  <blockquote style="">无需登录即可使用， 不上传你的设计稿、代码、数据...</blockquote>
+  <cite>本地优先，数据安全</cite>
+</div>
+
+<!-- ═══════════ Projects ═══════════ -->
+<section id="projects" data-bk-id="bk-block-5">
+  <div class="section-inner">
+    <p class="section-label reveal">Core competence</p>
+    <h2 class="section-title reveal">核心能力</h2>
+    <div class="projects-grid">
+      <div class="project-card project-card--ink reveal reveal-delay-1" data-bk-layout-item="true">
+        <h3 class="card-title">一键网页生成<br>和丰富模版</h3>
+        <p class="card-desc">内置丰富的各类设计系统、模版，所见即所得，支持生成单页网页和多页面网页工程源码；支持一键导出可分享链接。</p>
+        <div class="card-img">
+          <div class="pc-win">
+            <div class="pc-win__bar"><i></i><i></i><i></i><span>BUILDING</span></div>
+            <div class="pc-win__body">
+              <div class="pc-tpl pc-tpl--a"><span class="pc-bar"></span><span class="pc-bar"></span></div>
+              <div class="pc-tpl pc-tpl--b"><span class="pc-bar"></span><span class="pc-bar"></span></div>
+              <div class="pc-tpl pc-tpl--c"><span class="pc-bar"></span><span class="pc-bar"></span></div>
+            </div>
+            <div class="pc-share pc-glass">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9.5 14.5a4 4 0 0 0 5.7 0l3-3a4 4 0 1 0-5.7-5.7l-1 1"></path><path d="M14.5 9.5a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7l1-1"></path></svg>
+              分享链接
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="project-card project-card--mint reveal reveal-delay-2" data-bk-layout-item="true">
+        <h3 class="card-title">支持自定义<br>上传技能</h3>
+        <p class="card-desc">支持自定义创建、上传外部市场的技能，覆盖不同岗位与工作场景，选择后即可直接使用。</p>
+        <div class="card-img">
+          <div class="pc-kit pc-kit--back">
+            <span class="pc-kit__icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8.5"></circle><circle cx="12" cy="12" r="3.5"></circle></svg></span>
+            <b>营销策略</b><em>STRATEGY KIT</em>
+            <span class="pc-bar"></span><span class="pc-bar"></span>
+          </div>
+          <div class="pc-kit pc-kit--front pc-glass">
+            <span class="pc-kit__icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3.2 20 7.6v8.8L12 20.8 4 16.4V7.6z"></path><path d="M12 12 20 7.6M12 12v8.8M12 12 4 7.6"></path></svg></span>
+            <b>数据分析</b><em>ANALYSIS KIT</em>
+            <span class="pc-bar"></span><span class="pc-bar"></span>
+          </div>
+        </div>
+      </div>
+      <div class="project-card project-card--lilac reveal reveal-delay-3" data-bk-layout-item="true">
+        <h3 class="card-title">Office 专业产物<br>一站生成与编辑</h3>
+        <p class="card-desc">支持输出 PPTX、Word、Excel等HTML 等多种产物，原生支持 Office 套件预览与实时编辑，从内容生成、格式调整到最终交付一站完成。</p>
+        <div class="card-img">
+          <div class="pc-doc pc-doc--ppt"><span class="pc-doc__tag">PPTX</span><div class="pc-slide"></div><span class="pc-bar"></span></div>
+          <div class="pc-doc pc-doc--xls pc-glass"><span class="pc-doc__tag">XLSX</span><div class="pc-grid-mini"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="pc-doc pc-doc--word"><span class="pc-doc__tag">DOCX</span><span class="pc-bar"></span><span class="pc-bar"></span><span class="pc-bar"></span><span class="pc-bar"></span></div>
+        </div>
+      </div>
+      <div class="project-card project-card--sand reveal reveal-delay-4" data-bk-layout-item="true">
+        <h3 class="card-title">本地优先的<br>设计智能体</h3>
+        <p class="card-desc">文档处理均在本地完成创作，不走出设备，可自行接入各类大模型api使用，目前支持图片读写能力。</p>
+        <div class="card-img">
+          <div class="pc-local">
+            <div class="pc-local__fence"></div>
+            <span class="pc-local__tag">LOCAL</span>
+            <div class="pc-local__core"><i></i><i></i></div>
+            <div class="pc-tile pc-tile--photo"></div>
+            <div class="pc-tile pc-tile--doc"><span class="pc-bar"></span><span class="pc-bar" style="width:64%"></span></div>
+            <div class="pc-api pc-glass">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.2 2.4 5 13.8h5.4l-.9 7.8 8.5-11.4h-5.5z"></path></svg>
+              模型 API
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="pull-quote reveal" style="border-style: none;">
+  <blockquote>先把自己的想法变成能点的东西，再谈细节。</blockquote>
+  <cite>Blink 工作方式</cite>
+</div>
+
+<!-- ═══════════ Services ═══════════ -->
+<section id="services" data-bk-id="bk-block-7">
+  <div class="section-inner">
+    <p class="section-label reveal">Do more</p>
+    <h2 class="section-title reveal">还能做什么？</h2>
+    <div class="services-grid">
+      <div class="service-item reveal reveal-delay-1">
+        <span class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 2.6 21.4 12 12 21.4 2.6 12z"></path><path d="M12 8.2 15.8 12 12 15.8 8.2 12z" fill="currentColor" stroke="none"></path></svg></span>
+        <h3>可视化编辑网页</h3>
+        <p>点选页面上的元素就地改——字号、颜色、间距、排列，改完即定稿。</p>
+      </div>
+      <div class="service-item reveal reveal-delay-1">
+        <span class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><circle cx="12" cy="12" r="9.4"></circle><circle cx="12" cy="12" r="4.1" fill="currentColor" stroke="none"></circle></svg></span>
+        <h3>多站点原型</h3>
+        <p>可点、可填、可切状态的高保真原型，直接在手机尺寸里验证。</p>
+      </div>
+      <div class="service-item reveal reveal-delay-2">
+        <span class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M12 2.6 21.4 12 12 21.4 2.6 12z"></path></svg></span>
+        <h3>设计系统内置</h3>
+        <p>内置各类大厂设计系统与模版，同一份规范贯穿到每一页。</p>
+      </div>
+      <div class="service-item reveal reveal-delay-2">
+        <span class="service-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><circle cx="12" cy="12" r="9.4"></circle></svg></span>
+        <h3>图片生成与读图</h3>
+        <p>接入你自己的多模态模型，配图、读图、改图都在本地发起。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="cta-section" id="contact" data-bk-id="bk-block-8">
+  <div class="reveal">
+    <p class="section-label" style="color:rgba(255,255,255,0.4);">Make the design simpler</p>
+    <h2 class="section-title" style="font-size: 56px; font-weight: 200; font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, serif;">让设计变得更简单</h2>
+    <p class="cta-text" style="font-size: 16px;">一款本地优先的设计智能体</p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:32px;"><a href="./download.html" class="cta-pill" style="display: inline-flex; align-items: center; gap: 8px; background-color: var(--bg, #ffffff); color: var(--fg, #111111); border: 1px solid var(--border, #e5e5e5); border-radius: 999px; padding: 11px 22px; font-size: 14px; font-weight: 600; text-decoration: none;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_326_9164)">
+<path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="#0D0D0D" stroke-width="1.5" stroke-linecap="round"></path>
+<path d="M5 7.5L7.99293 10.4929C7.99683 10.4968 8.00317 10.4968 8.00707 10.4929L11 7.5M8 1.5V10" stroke="#0D0D0D" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+</g>
+<defs>
+<clipPath id="clip0_326_9164">
+<rect width="16" height="16" fill="white"></rect>
+</clipPath>
+</defs>
+</svg>下载桌面端</a></div>
+  </div>
+</section>
+
+<!-- ═══════════ Manifesto ═══════════ -->
+
+
+<!-- ═══════════ Footer ═══════════ -->
+<footer id="footer" data-bk-id="bk-block-9" style="border-color: rgba(0, 0, 0, 0.05); display: block; padding: var(--space-16) var(--space-4) var(--space-8);">
+  <!-- 上排:左 Logo+标语 / 右 三列链接 -->
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: var(--space-8);">
+    <div style="max-width: 300px;">
+      <a href="#top" aria-label="blink" style="display: inline-flex; align-items: center;">
+        <svg width="88" height="32" viewBox="0 0 88 32" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g clip-path="url(#clip0_577_7355)">
+<path d="M32.864 8.95489C32.864 8.6029 33.064 8.4269 33.464 8.4269H39.8239C41.5519 8.4269 42.8399 8.7789 43.6879 9.48289C44.5359 10.1709 44.9599 11.0749 44.9599 12.1949C44.9599 12.9789 44.7279 13.6828 44.2639 14.3068C43.7999 14.9308 43.0079 15.3788 41.8879 15.6508C42.4159 15.7468 42.9119 15.8908 43.3759 16.0828C43.8559 16.2588 44.2719 16.4988 44.6239 16.8028C44.9759 17.0908 45.2559 17.4508 45.4639 17.8828C45.6719 18.3148 45.7759 18.8268 45.7759 19.4188C45.7759 20.2988 45.5599 21.0188 45.1279 21.5788C44.6959 22.1388 44.1439 22.5708 43.4719 22.8748C42.8159 23.1788 42.0959 23.3868 41.3119 23.4987C40.5279 23.6107 39.7839 23.6667 39.0799 23.6667H33.464C33.064 23.6667 32.864 23.4907 32.864 23.1388C32.864 22.7868 33.056 22.5948 33.44 22.5628L34.304 22.4668C34.672 22.4188 34.864 22.2108 34.88 21.8428C34.88 21.4588 34.88 21.0748 34.88 20.6908C34.896 20.2908 34.904 19.8908 34.904 19.4908V12.6269C34.904 12.2269 34.896 11.8349 34.88 11.4509C34.88 11.0509 34.88 10.6509 34.88 10.2509C34.848 9.88289 34.656 9.67489 34.304 9.62689L33.44 9.53089C33.056 9.48289 32.864 9.29089 32.864 8.95489ZM37.7359 22.4908H38.7679C40.3359 22.4908 41.4239 22.2188 42.0319 21.6748C42.6559 21.1308 42.9679 20.3708 42.9679 19.3948C42.9679 18.3388 42.6479 17.5628 42.0079 17.0668C41.3679 16.5548 40.2959 16.2988 38.7919 16.2988H37.6879V19.4908C37.6879 20.0028 37.6879 20.5068 37.6879 21.0028C37.7039 21.4988 37.7199 21.9948 37.7359 22.4908ZM39.1039 9.60289H37.7359C37.7199 10.0669 37.7039 10.5309 37.6879 10.9949C37.6879 11.4429 37.6879 11.8989 37.6879 12.3629V15.1468H38.7199C39.9679 15.1468 40.8719 14.9228 41.4319 14.4748C42.0079 14.0108 42.2959 13.2909 42.2959 12.3149C42.2959 11.3389 42.0399 10.6429 41.5279 10.2269C41.0159 9.81089 40.2079 9.60289 39.1039 9.60289ZM51.4739 21.9148C51.4739 22.2828 51.6499 22.4988 52.0019 22.5628L52.5059 22.6588C52.8579 22.7228 53.0339 22.9068 53.0339 23.2108C53.0339 23.5147 52.8339 23.6667 52.4339 23.6667H47.85C47.45 23.6667 47.25 23.5147 47.25 23.2108C47.25 22.9228 47.434 22.7388 47.802 22.6588L48.33 22.5628C48.682 22.4988 48.858 22.2828 48.858 21.9148C48.874 21.4028 48.882 20.8908 48.882 20.3788C48.898 19.8668 48.906 19.3548 48.906 18.8428V9.67489C48.906 9.30689 48.722 9.09889 48.354 9.05089L47.634 8.95489C47.266 8.90689 47.082 8.7389 47.082 8.4509C47.082 8.1629 47.258 7.9709 47.61 7.8749L50.7779 7.05891C50.8579 7.02691 50.9219 7.01091 50.9699 7.01091C51.0339 7.01091 51.0979 7.01091 51.1619 7.01091C51.2739 7.01091 51.3459 7.02691 51.3779 7.05891C51.4739 7.12291 51.5219 7.31491 51.5219 7.63491L51.4499 10.4189V18.8428C51.4499 19.3548 51.4499 19.8668 51.4499 20.3788C51.4659 20.8908 51.4739 21.4028 51.4739 21.9148ZM58.5542 21.9388C58.5702 22.2748 58.7542 22.4828 59.1062 22.5628L59.5142 22.6348C59.8662 22.7148 60.0422 22.9068 60.0422 23.2108C60.0422 23.5147 59.8422 23.6667 59.4422 23.6667H55.0263C54.6263 23.6667 54.4263 23.5147 54.4263 23.2108C54.4263 22.9228 54.6103 22.7388 54.9783 22.6588L55.4583 22.5628C55.8103 22.4828 55.9943 22.2748 56.0103 21.9388V17.6908C56.0103 17.3708 56.0103 17.0828 56.0103 16.8268C56.0103 16.5708 56.0023 16.3308 55.9863 16.1068C55.9703 15.9788 55.9623 15.8508 55.9623 15.7228C55.9623 15.5948 55.9623 15.4668 55.9623 15.3388C55.9303 14.9708 55.7383 14.7628 55.3863 14.7148L54.8103 14.6428C54.4423 14.5948 54.2583 14.4268 54.2583 14.1388C54.2583 13.8828 54.4183 13.6908 54.7383 13.5628L57.8582 12.4349C57.9382 12.4029 58.0102 12.3789 58.0742 12.3629C58.1382 12.3469 58.2022 12.3389 58.2662 12.3389C58.3462 12.3389 58.4102 12.3629 58.4582 12.4109C58.5702 12.5069 58.6262 12.6989 58.6262 12.9869L58.5542 15.7228V21.9388ZM57.2582 10.0829C56.7463 10.0829 56.3223 9.93088 55.9863 9.62689C55.6663 9.32289 55.5063 8.92289 55.5063 8.4269C55.5063 7.93091 55.6663 7.53091 55.9863 7.22691C56.3223 6.92291 56.7463 6.77092 57.2582 6.77092C57.7542 6.77092 58.1622 6.92291 58.4822 7.22691C58.8182 7.53091 58.9862 7.93091 58.9862 8.4269C58.9862 8.92289 58.8182 9.32289 58.4822 9.62689C58.1622 9.93088 57.7542 10.0829 57.2582 10.0829ZM72.6659 21.9388C72.6819 22.2748 72.8659 22.4828 73.2179 22.5628L73.6259 22.6348C73.9779 22.7148 74.1539 22.9068 74.1539 23.2108C74.1539 23.5147 73.9539 23.6667 73.5539 23.6667H69.1379C68.7379 23.6667 68.5379 23.5147 68.5379 23.2108C68.5379 22.9068 68.7139 22.7228 69.0659 22.6588L69.5459 22.5628C69.8979 22.4828 70.0819 22.2748 70.0979 21.9388V16.7068C70.0979 15.7468 69.9779 15.0668 69.7379 14.6668C69.5139 14.2508 69.0979 14.0428 68.4899 14.0428C67.994 14.0428 67.514 14.1628 67.05 14.4028C66.602 14.6428 66.122 15.0028 65.61 15.4828V21.9388C65.626 22.2748 65.81 22.4828 66.162 22.5628L66.594 22.6588C66.946 22.7228 67.122 22.9068 67.122 23.2108C67.122 23.5147 66.922 23.6667 66.522 23.6667H62.058C61.658 23.6667 61.458 23.5147 61.458 23.2108C61.458 22.9228 61.642 22.7388 62.01 22.6588L62.514 22.5628C62.866 22.4828 63.05 22.2748 63.066 21.9388V17.5948C63.066 17.2748 63.066 16.9868 63.066 16.7308C63.066 16.4748 63.058 16.2508 63.042 16.0588C63.026 15.9308 63.018 15.8108 63.018 15.6988C63.018 15.5868 63.018 15.4668 63.018 15.3388C62.986 14.9708 62.794 14.7628 62.442 14.7148L61.866 14.6428C61.498 14.5948 61.314 14.4268 61.314 14.1388C61.314 13.8668 61.474 13.6668 61.794 13.5388L64.578 12.4589C64.722 12.3949 64.866 12.3629 65.01 12.3629C65.106 12.3629 65.17 12.3789 65.202 12.4109C65.33 12.4909 65.402 12.6749 65.418 12.9629L65.538 14.3788C66.146 13.6748 66.762 13.1549 67.386 12.8189C68.01 12.4669 68.7139 12.2909 69.4979 12.2909C70.5539 12.2909 71.3459 12.6189 71.8739 13.2749C72.4019 13.9148 72.6659 14.9708 72.6659 16.4428V21.9388ZM86.102 22.0348C86.262 22.2908 86.478 22.4508 86.75 22.5148L87.374 22.6348C87.726 22.7148 87.902 22.9068 87.902 23.2108C87.902 23.5147 87.702 23.6667 87.302 23.6667H84.638C84.334 23.6667 84.094 23.5307 83.918 23.2588L80.8461 18.1468L79.5501 19.4668C79.5501 19.8508 79.5501 20.2508 79.5501 20.6668C79.5661 21.0828 79.5741 21.4988 79.5741 21.9148C79.6061 22.2828 79.7901 22.4988 80.1261 22.5628L80.6541 22.6588C81.0221 22.7388 81.2061 22.9228 81.2061 23.2108C81.2061 23.5147 81.0061 23.6667 80.6061 23.6667H75.9981C75.5981 23.6667 75.3981 23.5147 75.3981 23.2108C75.3981 22.9228 75.5821 22.7388 75.9501 22.6588L76.4781 22.5628C76.8301 22.4988 77.0061 22.2828 77.0061 21.9148C77.0221 21.4028 77.0301 20.8828 77.0301 20.3548C77.0461 19.8108 77.0541 19.3068 77.0541 18.8428V9.67489C77.0541 9.30689 76.8701 9.09889 76.5021 9.05089L75.7821 8.95489C75.4141 8.90689 75.2301 8.7389 75.2301 8.4509C75.2301 8.1629 75.3981 7.9709 75.7341 7.8749L78.8781 7.05891C78.9581 7.02691 79.0221 7.01091 79.0701 7.01091C79.1341 7.01091 79.1981 7.01091 79.2621 7.01091C79.3741 7.01091 79.4461 7.02691 79.4781 7.05891C79.5741 7.12291 79.6221 7.31491 79.6221 7.63491L79.5501 10.4189V18.0508L83.0061 14.5708C83.1821 14.3948 83.2461 14.2348 83.1981 14.0908C83.1661 13.9308 83.0381 13.8348 82.8141 13.8028L82.5021 13.7548C82.1341 13.7068 81.9501 13.5148 81.9501 13.1789C81.9501 12.8589 82.1501 12.6989 82.5501 12.6989H86.63C87.03 12.6989 87.23 12.8589 87.23 13.1789C87.23 13.5148 87.046 13.7068 86.678 13.7548L85.502 13.9228C85.246 13.9708 85.014 14.0828 84.806 14.2588L82.6461 16.3708L86.102 22.0348Z" fill="black"></path>
+<rect y="1" width="28" height="28" fill="url(#pattern0_577_7355)"></rect>
+</g>
+<defs>
+<pattern id="pattern0_577_7355" patternContentUnits="objectBoundingBox" width="1" height="1">
+<use xlink:href="#image0_577_7355" transform="scale(0.0119048)"></use>
+</pattern>
+<clipPath id="clip0_577_7355">
+<rect width="87.9991" height="31.9997" fill="white"></rect>
+</clipPath>
+<image id="image0_577_7355" width="84" height="84" preserveAspectRatio="none" xlink:href="data:image/png;base64,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"></image>
+</defs>
+</svg>
+      </a>
+      <p style="margin: 10px 0 0; font-size: 13px; line-height: 1.7; color: var(--meta);">一款本地优先的设计智能体</p>
+      <div style="margin-top: 56px; font-size: 12px; color: var(--meta);">© 2026 Blink. All rights reserved.</div>
+      <!-- 备案号:「-X」是占位,上线前必须换成腾讯云备案控制台里 blinkwork.cn 这条站点的真实后缀 -->
+      <div class="footer-beian" style="margin-top: 6px; font-size: 12px; color: var(--meta);"><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026072152号-2</a></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-8) var(--space-16);" data-bk-id="bk-block-9-0-1">
+      
+      <div>
+        <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg); margin-bottom: 14px;">支持</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;" data-bk-id="bk-block-9-0-1-0-1">
+          
+          <a href="#">问题反馈</a>
+          <a href="./privacy.html">隐私政策</a>
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg); margin-bottom: 14px;">联系</div>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;" data-bk-id="bk-block-9-0-1-1-1">
+          <a href="mailto:arise130315@gmail.com">arise130315@gmail.com</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<div class="nowebgl" id="nowebgl">当前浏览器或环境不支持 WebGL，无法渲染水波效果。</div>
+
+<!-- ═══════════ 水波背景脚本(复用自 blink) ═══════════ -->
+<!-- 背景图 base64 数据:让 file:// 双击打开也能把图当 WebGL 纹理(data 内嵌不算跨域) -->
+<script src="./bg-base64.js"></script>
+<!-- Three.js 自托管全局版(不走 CDN;file:// 双击也能跑) -->
+<script src="./three.min.js"></script>
+
+<script>
+/* ============================================================
+   顶点着色器:全屏四边形,直接把 [-1,1] 的顶点输出为裁剪坐标
+   ============================================================ */
+const vertexShader = `
+  varying vec2 vUv;
+  void main(){
+    vUv = uv;
+    gl_Position = vec4(position.xy, 0.0, 1.0);
+  }
+`;
+
+/* ============================================================
+   片段着色器:全部液体效果在此实现
+   ============================================================ */
+const fragmentShader = `
+  precision highp float;
+  varying vec2 vUv;
+
+  uniform float uTime;
+  uniform vec2  uRes;
+  uniform float uSpeed;
+  uniform float uAmp;
+  uniform float uRipple;
+
+  uniform sampler2D uTex;
+  uniform float uUseTex;
+  uniform float uTexAspect;
+
+  const int NUM = 5;
+  uniform float uIceOn;          // 冰块扰动总开关:0=关(纯背景),1=开(换含实物背景时启用)
+  uniform vec2  uCenters[5];
+  uniform float uRadii[5];
+
+  const int RMAX = 10;
+  uniform vec2  uRippleC[10];
+  uniform float uRippleT[10];
+
+  mat2 rot(float a){ float s=sin(a), c=cos(a); return mat2(c,-s,s,c); }
+  float hash11(float p){ p=fract(p*0.1031); p*=p+33.33; p*=p+p; return fract(p); }
+  float hash21(vec2 p){ vec3 p3=fract(vec3(p.xyx)*0.1031); p3+=dot(p3,p3.yzx+33.33); return fract((p3.x+p3.y)*p3.z); }
+  float gauss(float x){ return exp(-x*x); }
+
+  /* 程序化“清爽水面”(仅纹理加载失败时的回退视觉) */
+  vec3 waterBase(vec2 uv, float t){
+    float aspect = uRes.x / uRes.y;
+    vec3 hi = vec3(0.91, 0.96, 0.99);
+    vec3 lo = vec3(0.66, 0.83, 0.95);
+    float g = clamp(uv.y*0.55 + (1.0-uv.x)*0.45, 0.0, 1.0);
+    vec3 col = mix(lo, hi, g);
+    vec2 p = uv * vec2(aspect, 1.0) * 3.5;
+    float c = 0.0, amp = 0.6;
+    for(int i=0;i<3;i++){
+      p += vec2(sin(p.y*1.5 - t*0.6), cos(p.x*1.4 + t*0.5));
+      c += amp * (0.5 + 0.5*sin(p.x)*sin(p.y));
+      p *= 1.7; amp *= 0.55;
+    }
+    float net = smoothstep(0.78, 1.05, c);
+    col = mix(col, vec3(1.0), net*0.30);
+    col += net*0.06;
+    float big = 0.5 + 0.5*sin(uv.x*2.0 + t*0.2)*sin(uv.y*2.2 - t*0.15);
+    col *= mix(0.97, 1.03, big);
+    return col;
+  }
+
+  float sparkles(vec2 uv){
+    float aspect = uRes.x / uRes.y;
+    vec2 gv = uv * vec2(aspect, 1.0) * 55.0;
+    vec2 id = floor(gv);
+    vec2 f  = fract(gv) - 0.5;
+    float r = hash21(id);
+    float tw = pow(max(0.0, sin(uTime*2.5 + r*40.0)), 60.0);
+    return tw * smoothstep(0.34, 0.0, length(f)) * step(0.86, r);
+  }
+
+  void main(){
+    float aspect = uRes.x / uRes.y;
+    float t = uTime * uSpeed;
+    vec2 uv = vUv;
+
+    vec2 drift = vec2(sin(uTime*0.05), cos(uTime*0.04)) * 0.004;
+    vec2 P = vec2(uv.x*aspect, uv.y);
+
+    vec2 sampleUv = uv + drift;
+    float iceMask = 0.0;
+    float rimAcc  = 0.0;
+    float glintAcc = 0.0;
+
+    /* 冰块扰动:uIceOn=0(默认)整段跳过,省 GPU */
+    if(uIceOn > 0.5){
+    for(int i=0;i<NUM;i++){
+      vec2  c = uCenters[i];
+      vec2  C = vec2(c.x*aspect, c.y);
+      float radius = uRadii[i];
+      float dist = distance(P, C);
+      if(dist > radius) continue;
+      float infl = smoothstep(radius, radius*0.8, dist);
+      float seed = hash11(float(i)*7.1 + 1.3);
+      float ph   = seed * 6.2831;
+      float spd  = 0.6 + seed*0.9;
+      float sway = (sin(t*1.3*spd + ph) + 0.5*sin(t*0.7*spd + ph*1.7)) / 1.5;
+      float angle = sway * uAmp;
+      float kick = 0.0;
+      for(int r=0;r<RMAX;r++){
+        float st = uRippleT[r];
+        if(st < 0.0) continue;
+        float age = uTime - st;
+        if(age < 0.0 || age > 2.8) continue;
+        vec2  rc = vec2(uRippleC[r].x*aspect, uRippleC[r].y);
+        float R  = age * 0.45;
+        float dd = distance(C, rc);
+        float x  = (dd - R) / 0.07;
+        float gss  = gauss(x);
+        float grad = -2.0 * (dd - R) / (0.07*0.07) * gss;
+        kick += grad * 0.02 * exp(-age*0.7);
+      }
+      kick = clamp(kick * uRipple, -0.12, 0.12);
+      angle += kick;
+      float breath = 1.0 + 0.013 * sin(t*0.9*spd + ph);
+      vec2 local = uv - c;
+      local.x *= aspect;
+      local = rot(angle) * local;
+      local *= breath;
+      local *= (1.0 - 0.16 * smoothstep(radius, 0.0, dist) * (1.0 - uUseTex));
+      local.x /= aspect;
+      vec2 distorted = c + local + drift;
+      sampleUv = mix(sampleUv, distorted, infl);
+      iceMask = max(iceMask, infl);
+      float rr = dist / radius;
+      rimAcc += infl * smoothstep(0.12, 0.0, abs(rr - 0.86));
+      vec2 ndir = (P - C) / max(dist, 1e-4);
+      float glint = smoothstep(0.45, 0.9, dot(ndir, vec2(-0.66, 0.75)))
+                  * smoothstep(0.95, 0.6, rr) * smoothstep(0.30, 0.72, rr);
+      glintAcc += glint * infl;
+    }
+    } // 关闭 if(uIceOn>0.5)
+
+    /* 点击涟漪:折射式水波(沿径向推挤 UV) */
+    vec2 refractOff = vec2(0.0);
+    for(int r=0;r<RMAX;r++){
+      float st = uRippleT[r];
+      if(st < 0.0) continue;
+      float age = uTime - st;
+      if(age < 0.0 || age > 2.8) continue;
+      vec2  rel = uv - uRippleC[r];
+      float dd  = length(rel * vec2(aspect, 1.0));
+      float R   = age * 0.45;
+      float x   = (dd - R) / 0.07;
+      float life = smoothstep(0.0, 0.10, age) * (1.0 - smoothstep(1.6, 2.8, age));
+      float wave = sin(x * 3.14159) * gauss(x) * life;
+      vec2  dir  = dd > 1e-4 ? normalize(rel) : vec2(0.0);
+      refractOff += dir * wave;
+    }
+    sampleUv += refractOff * 0.022 * uRipple;
+
+    /* cover 等比裁切:顶部对齐(优先显示图顶、裁掉下方) */
+    vec2 texUv = sampleUv;
+    if(uUseTex > 0.5){
+      if(aspect > uTexAspect){
+        texUv.y = texUv.y * (uTexAspect / aspect) + (1.0 - uTexAspect / aspect);
+      } else {
+        texUv.x = (texUv.x - 0.5) * (aspect / uTexAspect) + 0.5;
+      }
+    }
+
+    vec3 col;
+    if(uUseTex > 0.5){
+      col = texture2D(uTex, texUv).rgb;
+    } else {
+      col = waterBase(texUv, t);
+      vec3 iceTint = vec3(0.80, 0.92, 1.0);
+      col = mix(col, col*1.08 + iceTint*0.05, iceMask*0.9);
+      col += rimAcc * vec3(0.92, 0.98, 1.0) * 0.5;
+      col += glintAcc * 0.6;
+      float sp = sparkles(uv);
+      col += sp * (0.5 + iceMask*1.4);
+      float vig = smoothstep(1.35, 0.35, length((uv-0.5)*vec2(aspect,1.0)));
+      col *= mix(0.93, 1.0, vig);
+    }
+
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+/* 换图口子:同 index.html —— 把新图压成 hero.jpg 放本目录,再重生成 bg-base64.js 即可。 */
+const IMAGE_SRC = window.HERO_BG || './hero.jpg';
+
+/* 冰块扰动点(默认关闭 uIceOn=0,保留备用) */
+const ICE = [
+  { c: [0.66, 0.56], r: 0.22 },
+  { c: [0.50, 0.40], r: 0.11 },
+  { c: [0.40, 0.18], r: 0.07 },
+  { c: [0.09, 0.86], r: 0.08 },
+  { c: [0.90, 0.19], r: 0.12 },
+];
+const RMAX = 10;
+let rippleIdx = 0;
+
+const uniforms = {
+  uTime:    { value: 0 },
+  uRes:     { value: new THREE.Vector2(1, 1) },
+  uSpeed:   { value: 1.0 },
+  uAmp:     { value: 3 * Math.PI / 180 },
+  uRipple:  { value: 1.0 },
+  uIceOn:   { value: 0 },
+  uTex:     { value: null },
+  uUseTex:  { value: 0 },
+  uTexAspect: { value: 16 / 9 },
+  uCenters: { value: ICE.map(o => new THREE.Vector2(o.c[0], o.c[1])) },
+  uRadii:   { value: ICE.map(o => o.r) },
+  uRippleC: { value: Array.from({ length: RMAX }, () => new THREE.Vector2()) },
+  uRippleT: { value: new Array(RMAX).fill(-1) },
+};
+
+let renderer, scene, camera, clock;
+const app = document.getElementById('app');
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// 退回静态背景:停渲染、隐藏画布,露出 body 的 CSS 背景图(纹理加载失败 / 减弱动态 时用)
+function staticBackdrop(){
+  if (renderer) renderer.setAnimationLoop(null);
+  app.style.display = 'none';
+}
+
+function init(){
+  renderer = new THREE.WebGLRenderer({ antialias: false });
+  // 移动端(触摸设备)像素比封顶 1.5,降低逐像素开销;桌面仍封顶 2
+  const _coarse = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, _coarse ? 1.5 : 2));
+  app.appendChild(renderer.domElement);
+
+  scene = new THREE.Scene();
+  camera = new THREE.Camera();
+
+  const material = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
+  scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+
+  resize();
+  window.addEventListener('resize', resize);
+  // 涟漪监听挂在 window:画布在内容之下,点页面任意处都能在背后激起涟漪,且不拦截链接/选字
+  window.addEventListener('pointerdown', onPointer);
+
+  new THREE.TextureLoader().load(
+    IMAGE_SRC,
+    (tex) => {
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.minFilter = tex.magFilter = THREE.LinearFilter;
+      tex.generateMipmaps = false;
+      if (tex.image && tex.image.width) {
+        uniforms.uTexAspect.value = tex.image.width / tex.image.height;
+      }
+      uniforms.uTex.value = tex;
+      uniforms.uUseTex.value = 1;
+    },
+    undefined,
+    () => { uniforms.uUseTex.value = 0; staticBackdrop(); }
+  );
+
+  clock = new THREE.Clock();
+  if (reduceMotion) {
+    staticBackdrop();
+  } else {
+    renderer.setAnimationLoop(render);
+  }
+
+  // 切到后台暂停渲染,回前台恢复(省电、减少发热)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      renderer.setAnimationLoop(null);
+    } else if (!reduceMotion) {
+      clock.getDelta();
+      renderer.setAnimationLoop(render);
+    }
+  });
+}
+
+function resize(){
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h);
+  uniforms.uRes.value.set(w, h);
+}
+
+// 点击/触摸 → 在该处生成一圈向外扩散的涟漪(画布固定铺满视口,clientX/Y 直接映射)
+function onPointer(e){
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = 1.0 - (e.clientY - rect.top) / rect.height;
+  uniforms.uRippleC.value[rippleIdx].set(x, y);
+  uniforms.uRippleT.value[rippleIdx] = uniforms.uTime.value;
+  rippleIdx = (rippleIdx + 1) % RMAX;
+}
+
+function render(){
+  uniforms.uTime.value += Math.min(clock.getDelta(), 0.05);
+  renderer.render(scene, camera);
+}
+
+try {
+  init();
+} catch (err) {
+  console.error(err);
+  document.getElementById('nowebgl').style.display = 'flex';
+}
+</script>
+
+<!-- ═══════════ Blink 交互脚本(原样保留) ═══════════ -->
+<script>
+/* ─── Sticky nav ───────────────────────────────────────────────── */
+const nav = document.getElementById('navbar');
+const navToggle = document.getElementById('navToggle');
+const navLinks = document.getElementById('navLinks');
+
+navToggle.addEventListener('click', () => {
+  navLinks.classList.toggle('open');
+});
+
+navLinks.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => navLinks.classList.remove('open'));
+});
+
+/* 进入 72px、退出 24px:两态动画有 600ms,单阈值会让人在临界点上反复触发半截动画 */
+let ticking = false;
+function syncNavFloat() {
+  const y = window.scrollY;
+  if (y > 72) nav.classList.add('scrolled');
+  else if (y < 24) nav.classList.remove('scrolled');
+  ticking = false;
+}
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    window.requestAnimationFrame(syncNavFloat);
+    ticking = true;
+  }
+});
+syncNavFloat();   /* 带着滚动位置刷新/回退进来时,导航直接是对的那一态 */
+
+
+/* ─── 首屏装饰卡:越靠近视口中央越往里聚拢 ───────────────────────── */
+const heroDeco = document.querySelector('.hero-deco');
+if (heroDeco && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  let decoTicking = false;
+  /* 斜坡起点锚在首屏那一刻的距离,而不是固定系数(原来是 innerHeight*0.72)。
+     固定系数下首屏算出来已经聚了约一半(900 高视口约 0.46),看不到完整散开态;
+     锚住之后:首屏 = 恒 0 完全散开,往下滚才开始收,容器中心到视口中心时聚满。 */
+  let decoSpan = null;
+  /* 斜坡起点直接读 CSS 里 .hero-deco 的 --gather 初始值,保证「首帧渲染值」与
+     「脚本斜坡起点」永远是同一个数,改动效起点只需改 CSS 那一处。
+     实测重叠(1440 视口/860 图宽):0→-37/-84/-44,0.3→+12/-34/+6,1→+125/+84/+122 */
+  const DECO_START = parseFloat(getComputedStyle(heroDeco).getPropertyValue('--gather')) || 0;
+  const syncDeco = () => {
+    const r = heroDeco.getBoundingClientRect();
+    /* delta > 0 = 容器中心还在视口中心下方(正在往上走)。只在这一段做聚拢;
+       越过中心之后维持聚拢态,不再散回去 —— 只要「由外向内」这一程。 */
+    const delta = (r.top + r.height / 2) - innerHeight / 2;
+    /* 起点就取首屏那一刻的距离本身,这样第一帧 delta === decoSpan → gather 恰为 0。
+       只有 delta ≤ 0(载入时容器已越过视口中心,如浏览器恢复滚动位置)才用兜底值。 */
+    if (decoSpan === null) decoSpan = delta > 0 ? delta : innerHeight * 0.3;
+    const g = delta >= decoSpan ? DECO_START
+            : delta <= 0 ? 1
+            : DECO_START + (1 - DECO_START) * (1 - delta / decoSpan);
+    heroDeco.style.setProperty('--gather', g.toFixed(3));
+    decoTicking = false;
+  };
+  addEventListener('scroll', () => {
+    if (!decoTicking) { requestAnimationFrame(syncDeco); decoTicking = true; }
+  }, { passive: true });
+  /* 改窗口大小会让首屏距离变掉。只在页面停在顶部时重新锚定 ——
+     滚到一半时重锚会把当前(已缩短的)距离当成起点,斜坡直接废掉。 */
+  addEventListener('resize', () => { if (scrollY === 0) decoSpan = null; syncDeco(); });
+  syncDeco();
+}
+
+/* ─── Scroll reveal (Intersection Observer) ────────────────────── */
+const revealEls = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+revealEls.forEach(el => observer.observe(el));
+</script>
+
+<!-- ═══════════ 标题粒子效果(移植自 React Bits · ParticleText,只取粒子部分)═══════════ -->
+<style>
+/* 挂载容器:只给定位参照,不产生任何位移 */
+.particle-host { position: relative; }
+/* 覆盖画布:绝对定位在标题上,背景透明、不吃鼠标事件 —— 不参与排版,不碰页面背景。
+   基础尺寸收成 0:画布的真实尺寸由脚本 build() 用行内样式给出;在 rAF 被节流的
+   环境里(质量门的隐藏 iframe、后台标签页)build 跑不到,没有这条 0 尺寸兜底,
+   画布会以 300×150 的默认盒子漂在行内位置,把 375px 视口撑出横向滚动。 */
+.particle-canvas { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 1; }
+/* 粒子接管时只清掉原字形的填充,color / 字号 / 字体 / 行高 / 排版一律不动 */
+.particle-title { -webkit-text-fill-color: transparent; }
+/* 实心文字 ↔ 粒子 的交叉淡入淡出(只有 hover 档的标题挂这个类,时长与脚本 swapMs 保持一致) */
+.particle-fade { transition: -webkit-text-fill-color 260ms ease-in-out; }
+</style>
+<script>
+(() => {
+  /* ─── 可调参数 ─────────────────────────────────────────────────── */
+  const CFG = {
+    particleSize:   2.0,   // 粒子直径(px)
+    density:        3,     // 采样步长,越小粒子越密
+    scatter:        190,   // 入场散开半径
+    gatherDuration: 1700,  // 聚合时长(ms)
+    stagger:        420,   // 逐粒延迟上限(ms)
+    pointerRepel:   42,    // 鼠标排斥强度
+    repelRadius:    120,   // 鼠标排斥半径
+    idleDrift:      0.8,   // 静止时的浮动幅度
+    swapMs:         260,   // 实心字 ↔ 粒子 的过渡时长(与 CSS transition 同步)
+    maxParticles:   6000
+  };
+
+  /* 要加粒子的标题。hover:平时是完整实心文字,鼠标移上去才化成粒子 */
+  const TARGETS = [
+    { selector: '#top .bkv-title',        hover: true },
+    { selector: '#contact .section-title' }
+  ];
+
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+  const mount = (title, opts) => {
+    /* 先复位:万一上一次的运行时状态被编辑器存回了文件,这里能自愈 */
+    title.classList.remove('particle-title');
+    /* 减弱动态:原样保留文字,不做任何处理 */
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const host = title.parentElement;
+    if (!host) return;
+    /* 画布挂在标题的父容器里,滚动、reveal 位移与淡入都自动跟随 */
+    const canvas = host.querySelector(':scope > .particle-canvas') || document.createElement('canvas');
+    canvas.className = 'particle-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    host.classList.add('particle-host');
+    if (canvas.parentNode !== host) host.appendChild(canvas);
+    if (opts.hover) title.classList.add('particle-fade');
+
+    const step = Math.max(2, Math.round(CFG.density));
+    let particles = [];
+    let color = getComputedStyle(title).color;
+    let width = 0, height = 0, pad = 0, clipX = 0;
+    let frame = null, queued = null, inView = true, played = false;
+    let gathering = false, gatherStart = 0;
+    let mix = opts.hover ? 0 : 1;          // 0=看到实心文字,1=看到粒子
+    let lastNow = 0, warm = false;
+    const pointer = { active: false, clientX: 0, clientY: 0, x: 0, y: 0, sx: 0, sy: 0 };
+
+    /* 逐字读浏览器排版后的真实位置:居中、换行、字距、中英文混排字体都自动跟随 */
+    const readGlyphs = () => {
+      const walker = document.createTreeWalker(title, NodeFilter.SHOW_TEXT);
+      const range = document.createRange();
+      const glyphs = [];
+      let node;
+      while ((node = walker.nextNode())) {
+        const text = node.data;
+        for (let i = 0; i < text.length;) {
+          const size = text.codePointAt(i) > 0xffff ? 2 : 1;
+          const ch = text.substr(i, size);
+          if (ch.trim()) {
+            range.setStart(node, i);
+            range.setEnd(node, i + size);
+            const rect = range.getBoundingClientRect();
+            if (rect.width > 0.5 && rect.height > 0.5) glyphs.push({ ch, rect });
+          }
+          i += size;
+        }
+      }
+      return glyphs;
+    };
+
+    const ensureLoop = () => {
+      if (frame === null) frame = window.requestAnimationFrame(render);
+    };
+
+    const startGather = fromScatter => {
+      particles.forEach(p => {
+        if (fromScatter) {
+          const angle = p.seed * Math.PI * 2;
+          const distance = CFG.scatter * (0.35 + p.depth * 0.75);
+          p.x = p.targetX + Math.cos(angle) * distance + (p.depth - 0.5) * CFG.scatter * 0.55;
+          p.y = p.targetY + Math.sin(angle) * distance + (p.seed - 0.5) * CFG.scatter * 0.55;
+        }
+        p.startX = p.x;
+        p.startY = p.y;
+      });
+      gatherStart = performance.now();
+      gathering = fromScatter;
+      if (fromScatter) mix = 1;            // 入场聚合期间直接由粒子出面
+      ensureLoop();
+    };
+
+    const build = replay => {
+      queued = null;
+      title.classList.remove('particle-title');   // 先还原,量的是真实字形
+      const glyphs = readGlyphs();
+      const cs = getComputedStyle(title);
+      color = cs.color;
+      if (!glyphs.length) { particles = []; return; }
+
+      let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+      glyphs.forEach(({ rect }) => {
+        left = Math.min(left, rect.left);    top = Math.min(top, rect.top);
+        right = Math.max(right, rect.right); bottom = Math.max(bottom, rect.bottom);
+      });
+
+      pad = Math.ceil(CFG.scatter * 1.15);
+      width  = Math.ceil(right - left) + pad * 2;
+      height = Math.ceil(bottom - top) + pad * 2;
+
+      /* 相对父容器摆位,不用页面坐标:祖先有 transform、页面滚动都不受影响 */
+      /* 画布元素横向夹回视口内:两侧各 pad(≈219px)的散开余量在窄视口下必然把
+         页面撑出横向滚动(375px 质量门硬问题),而视口外的粒子本来就看不见。
+         只裁元素盒子,绘制坐标系用 clipX 平移补回 —— 粒子、蒙版、指针的坐标
+         全程留在未裁剪的原始坐标系里,视觉零变化。 */
+      const hostRect = host.getBoundingClientRect();
+      const vw = document.documentElement.clientWidth || window.innerWidth;
+      const rawLeft = left - pad;
+      const boxLeft = Math.max(rawLeft, 0);
+      const boxRight = Math.min(right + pad, vw);
+      const boxWidth = Math.max(1, Math.ceil(boxRight - boxLeft));
+      clipX = boxLeft - rawLeft;
+      canvas.style.left   = (boxLeft - hostRect.left - host.clientLeft) + 'px';
+      canvas.style.top    = (top - hostRect.top - host.clientTop - pad) + 'px';
+      canvas.style.width  = boxWidth + 'px';
+      canvas.style.height = height + 'px';
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width  = Math.round(boxWidth * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, -clipX * dpr, 0);
+
+      /* 离屏按同字体、同位置画一遍文字,只作采样蒙版 */
+      const mask = document.createElement('canvas');
+      mask.width = width;
+      mask.height = height;
+      const mctx = mask.getContext('2d', { willReadFrequently: true });
+      mctx.font = `${cs.fontStyle} ${cs.fontWeight} ${parseFloat(cs.fontSize)}px ${cs.fontFamily}`;
+      mctx.textAlign = 'left';
+      mctx.textBaseline = 'alphabetic';
+      mctx.fillStyle = '#fff';
+      glyphs.forEach(({ ch, rect }) => {
+        const m = mctx.measureText(ch);
+        const box = m.fontBoundingBoxAscent + m.fontBoundingBoxDescent;
+        const baseline = rect.top - top + pad + (rect.height - box) / 2 + m.fontBoundingBoxAscent;
+        mctx.fillText(ch, rect.left - left + pad, baseline);
+      });
+
+      const data = mctx.getImageData(0, 0, width, height).data;
+      const spots = [];
+      for (let y = 0; y < height; y += step) {
+        for (let x = 0; x < width; x += step) {
+          const alpha = data[(y * width + x) * 4 + 3];
+          if (alpha > 40) spots.push({ x, y, alpha: alpha / 255 });
+        }
+      }
+      const stride = Math.max(1, Math.ceil(spots.length / CFG.maxParticles));
+      particles = spots.filter((_, i) => i % stride === 0).map((s, i) => {
+        const seed = ((i * 9301 + 49297) % 233280) / 233280;
+        const depth = 0.45 + (((i * 233 + 97) % 1000) / 1000) * 0.9;
+        return {
+          x: s.x, y: s.y, startX: s.x, startY: s.y,
+          targetX: s.x, targetY: s.y,
+          size: Math.max(0.6, CFG.particleSize * (0.75 + s.alpha * 0.45)),
+          alpha: s.alpha, seed, depth, delay: seed * CFG.stagger
+        };
+      });
+
+      pointer.x = pointer.sx = width / 2;
+      pointer.y = pointer.sy = height / 2;
+      if (replay) startGather(true);
+      else { startGather(false); ensureLoop(); }
+    };
+
+    function render(now) {
+      frame = null;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = color;
+
+      const dt = lastNow ? clamp(now - lastNow, 0, 64) : 16;   // 切后台回来不跳变
+      lastNow = now;
+
+      if (pointer.active) {
+        /* 画布盒子被横向裁过(clipX),指针要换算回未裁剪的原始坐标系 */
+        const box = canvas.getBoundingClientRect();
+        pointer.x = pointer.clientX - box.left + clipX;
+        pointer.y = pointer.clientY - box.top;
+      }
+      if (!warm) {                         // 停帧后重新起步:光标直接就位,不拖出一道扫过的尾巴
+        pointer.sx = pointer.x;
+        pointer.sy = pointer.y;
+        warm = true;
+      }
+      pointer.sx += (pointer.x - pointer.sx) * 0.18;
+      pointer.sy += (pointer.y - pointer.sy) * 0.18;
+
+      /* 鼠标落在字身范围内:实心文字化成粒子 */
+      const onText = pointer.active &&
+        pointer.x > pad - 24 && pointer.x < width - pad + 24 &&
+        pointer.y > pad - 24 && pointer.y < height - pad + 24;
+      const want = !opts.hover || gathering || onText ? 1 : 0;
+      /* 按时间推进(不按帧),两端都是 260ms;class 与 mix 同一刻起步,文字与粒子真正交叉淡 */
+      mix = clamp(mix + (want ? dt : -dt) / CFG.swapMs, 0, 1);
+      if (opts.hover) title.classList.toggle('particle-title', want === 1);
+      else title.classList.add('particle-title');
+      const swap = mix * mix * (3 - 2 * mix);   // smoothstep,与 CSS 的 ease-in-out 同形
+
+      let complete = true;
+      particles.forEach(p => {
+        let baseX = p.targetX;
+        let baseY = p.targetY;
+        let progress = 1;
+
+        if (gathering) {
+          progress = clamp((now - gatherStart - p.delay) / CFG.gatherDuration, 0, 1);
+          const eased = easeOutCubic(progress);
+          baseX = p.startX + (p.targetX - p.startX) * eased;
+          baseY = p.startY + (p.targetY - p.startY) * eased;
+          if (progress < 1) complete = false;
+        } else if (CFG.idleDrift > 0) {
+          const t = now * 0.001;
+          /* 浮动与排斥都按 swap 收放:淡出淡入两端都不会突然抖一下 */
+          baseX += Math.sin(t * 0.9 + p.seed * 10) * CFG.idleDrift * p.depth * swap;
+          baseY += Math.cos(t * 0.75 + p.depth * 10) * CFG.idleDrift * p.depth * swap;
+        }
+
+        if (pointer.active && swap > 0) {
+          const dx = baseX - pointer.sx;
+          const dy = baseY - pointer.sy;
+          const distance = Math.hypot(dx, dy);
+          if (distance > 0 && distance < CFG.repelRadius) {
+            const force = Math.pow(1 - distance / CFG.repelRadius, 2) * CFG.pointerRepel * swap;
+            baseX += (dx / distance) * force;
+            baseY += (dy / distance) * force;
+          }
+        }
+
+        p.x += (baseX - p.x) * 0.22;
+        p.y += (baseY - p.y) * 0.22;
+
+        ctx.globalAlpha = clamp(p.alpha * swap * (0.35 + progress * 0.65), 0, 1);
+        if (p.size <= 2.1) {
+          ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        } else {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+      ctx.globalAlpha = 1;
+
+      if (gathering && complete) gathering = false;
+      /* 停帧:滚出视口,或 hover 档已经完全交还给实心文字时 */
+      if (!inView) { lastNow = 0; warm = false; return; }
+      if (opts.hover && !gathering && !onText && mix <= 0) {
+        ctx.clearRect(0, 0, width, height);
+        lastNow = 0;
+        warm = false;
+        return;
+      }
+      ensureLoop();
+    }
+
+    const queueBuild = replay => {
+      if (queued) window.cancelAnimationFrame(queued);
+      queued = window.requestAnimationFrame(() => build(replay));
+    };
+
+    window.addEventListener('resize', () => queueBuild(false));
+    window.addEventListener('pointermove', e => {
+      pointer.clientX = e.clientX;
+      pointer.clientY = e.clientY;
+      pointer.active = true;
+      if (inView) ensureLoop();
+    }, { passive: true });
+    document.addEventListener('pointerleave', () => { pointer.active = false; });
+
+    /* 标题被改字/改样式(Blink 编辑器)后重新采样并重放 */
+    new MutationObserver(() => queueBuild(true)).observe(title, {
+      characterData: true, childList: true, subtree: true,
+      attributes: true, attributeFilter: ['style']
+    });
+    new ResizeObserver(() => queueBuild(false)).observe(title);
+
+    /* 滚出视口停帧;滚进视口(与本页 reveal 同一时机)放一次聚合 */
+    new IntersectionObserver(entries => {
+      const entry = entries[entries.length - 1];
+      inView = entry.isIntersecting;
+      if (!inView) return;
+      ensureLoop();
+      if (!played && entry.intersectionRatio >= 0.15) {
+        played = true;
+        if (particles.length) startGather(true);
+      }
+    }, { threshold: [0, 0.15], rootMargin: '0px 0px -40px 0px' }).observe(title);
+
+    const boot = () => queueBuild(played);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(boot);
+    else boot();
+  };
+
+  TARGETS.forEach(target => {
+    const el = document.querySelector(target.selector);
+    if (el) mount(el, target);
+  });
+})();
+</script>
+
+
+</body></html>

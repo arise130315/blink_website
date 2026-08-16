@@ -1,0 +1,7 @@
+# 源目录(Blink 项目工作区)里混着内部文件,同步时绝不能带进这个公开仓。
+# 这几条是保险:即使误用 `cp -r` 整目录同步,也不会被提交。
+CONTEXT.md
+.claude/
+*.artifact.json
+
+.DS_Store

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>隐私政策 — Blink</title>
+<style>
+/* 令牌与排版全部取自 index.html,保持同一套视觉 */
+:root {
+  --bg:          #fafafa;
+  --surface:     #ffffff;
+  --fg:          #111111;
+  --fg-2:        #2c2c2c;
+  --muted:       #6b6b6b;
+  --meta:        #8c8c8c;
+  --border-soft: #f0f0f0;
+
+  --font-display: "Iowan Old Style", "Charter", "Times New Roman", Georgia, serif;
+  --font-body:    -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+
+  --space-2: 8px;  --space-3: 12px;  --space-4: 16px;
+  --space-6: 24px; --space-8: 32px;  --space-12: 48px;
+  --space-16: 64px; --space-20: 80px;
+
+  --container-narrow: 720px;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+.wrap {
+  max-width: var(--container-narrow);
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-4) var(--space-20);
+}
+
+/* 返回链接:与页脚链接同一档灰,hover 转深 */
+.back {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 200ms var(--ease-out);
+  margin-bottom: var(--space-12);
+}
+.back:hover { color: var(--fg); }
+
+h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1.25;
+  letter-spacing: 1px;
+  margin-bottom: var(--space-3);
+}
+.lede {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: var(--space-16);
+}
+
+h2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: var(--space-12) 0 var(--space-4);
+}
+p { color: var(--fg-2); margin-bottom: var(--space-4); }
+ul { margin: 0 0 var(--space-4) 20px; color: var(--fg-2); }
+li { margin-bottom: var(--space-2); }
+a { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+
+.meta {
+  margin-top: var(--space-16);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--border-soft);
+  font-size: 12px;
+  color: var(--meta);
+}
+.meta a { color: inherit; text-decoration: none; }
+.meta a:hover { color: var(--fg); }
+.meta div + div { margin-top: 6px; }
+
+@media (max-width: 640px) {
+  h1 { font-size: 34px; }
+  .wrap { padding-top: var(--space-12); }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./index.html">← 返回首页</a>
+
+  <h1>隐私政策</h1>
+  <p class="lede">Blink 是本地优先的软件，不收集任何数据。</p>
+
+  <h2>零遥测</h2>
+  <p>Blink 没有任何遥测、统计或回传行为。没有使用追踪，没有同意弹窗，也没有隐私开关需要配置——没有任何东西需要你选择开启或关闭。</p>
+  <p>你的项目、生成的文件和 API 密钥都留在你自己的电脑上。应用可以完全离线运行。Blink 唯一的对外网络请求，是发往<strong>你自己</strong>明确配置的模型服务商与服务(例如 Claude API，或你自己设置的部署目标)。</p>
+
+  <h2>Blink 从不收集</h2>
+  <ul>
+    <li>使用指标、令牌用量、错误率或耗时数据</li>
+    <li>你的提示词、助手回复，或工具的输入与输出</li>
+    <li>文件名、产物清单、项目元数据或文件内容</li>
+    <li>安装标识、设备指纹，或任何形式的追踪标识</li>
+  </ul>
+
+  <h2>自带密钥</h2>
+  <p>Blink 在每一层都是自带密钥。你为编码智能体和模型服务商配置的 API 密钥保存在本地，只用于直接与这些服务商通信。它们绝不会被发送到任何由 Blink 运营的服务——我们没有这样的服务。</p>
+
+  <h2>关于本网站</h2>
+  <p>以上说明的是 Blink 软件本身。本网站以及桌面端安装包的下载服务由服务器和对象存储承载，会产生常规访问日志(访问者 IP 地址、访问时间、请求的文件)，仅用于保障服务可用和排查故障。本网站不使用统计分析工具，不投放广告，也不设置任何用于追踪的 Cookie。</p>
+
+  <h2>开源归属</h2>
+  <p>Blink 是基于开源项目 <a href="https://github.com/nexu-io/open-design" target="_blank" rel="noopener noreferrer">Open Design</a>(Apache-2.0 许可)独立衍生的分支。</p>
+
+  <h2>联系</h2>
+  <p>对隐私有疑问，可以邮件联系 <a href="mailto:arise130315@gmail.com">arise130315@gmail.com</a>。</p>
+
+  <div class="meta">
+    <div>最后更新:2026 年 8 月 17 日</div>
+    <div>© 2026 Blink. All rights reserved.</div>
+    <div><a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">粤ICP备2026072152号-2</a></div>
+  </div>
+</div>
+</body></html>
