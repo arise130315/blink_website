@@ -69,11 +69,6 @@ body {
 }
 .panel > * { position: relative; }
 
-.eyebrow {
-  text-align: center; font-size: 12px; font-weight: 600;
-  letter-spacing: .18em; text-transform: uppercase; color: var(--accent);
-  margin-bottom: var(--space-4);
-}
 h1 {
   text-align: center; font-family: var(--font-display); font-weight: 400;
   font-size: clamp(38px, 6vw, 68px); line-height: 1.15; letter-spacing: 1px;
@@ -86,8 +81,10 @@ h1 {
   display: flex; justify-content: center; align-items: center; gap: 10px;
   flex-wrap: wrap; font-size: 13px; color: var(--meta); margin-bottom: var(--space-6);
 }
-.platforms b { color: var(--accent); font-weight: 600; }
-.platforms span { color: var(--border); }
+/* 提示句独占一行(flex 基准 100% 强制换行),平台值落到第二行;
+   行间距 4px、列间距 10px 分开设,免得换行后两行离得太开 */
+.platforms { gap: 4px 10px; }
+.platforms b { flex: 0 0 100%; text-align: center; color: var(--accent); font-weight: 600; }
 
 /* 平台标识条:参考图是可切的三个 tab,这里只有一个平台,
    所以做成不可点的标识条 —— 不假装能切 */
@@ -203,14 +200,12 @@ h1 {
   <a class="back" href="./index.html">← 返回首页</a>
 
   <div class="panel">
-    <div class="eyebrow">Blink / Desktop</div>
     <h1>下载 Blink 桌面端</h1>
     <p class="lede">本地运行，随时唤起。装好即用，不需要登录</p>
 
     <div class="platforms">
-      <b>目前仅支持平台</b>
-      <span>·</span>
-      macOS · Apple 芯片(M1 及以上)
+      <b>当前为测试阶段，功能尚未完全稳定，仅支持平台：</b>
+      <span>macOS · Apple 芯片(M1 及以上)</span>
     </div>
 
     <div class="osbar">
