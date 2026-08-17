@@ -20,8 +20,8 @@
   --warn:        #eab308;
   --danger:      #dc2626;
 
-  --font-display: "Iowan Old Style", "Charter", "Times New Roman", Georgia, serif;
-  --font-body:    -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  --font-display: "Iowan Old Style", "Charter", "Times New Roman", Georgia, "Songti SC", "Noto Serif SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", serif;
+  --font-body:    -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
   --font-mono:    ui-monospace, "JetBrains Mono", "SF Mono", monospace;
 
   --space-1: 4px;  --space-2: 8px;  --space-3: 12px;
@@ -311,6 +311,13 @@ section { position: relative; }
   letter-spacing: -0.015em;
   margin-bottom: var(--space-8);
   color: var(--fg);
+  /* 窄屏换行时把各行匀开。不加的话「让设计变得更简单」在 375 宽下断成
+     276 / 165 两截,第二行明显短;加了是 221 / 221。字号再小一档还会掉出孤字 */
+  text-wrap: balance;
+}
+/* 首屏标题同理:375 宽下 40px 会断成 304 / 82,末行只剩一个「稿」字 */
+.bkv-title {
+  text-wrap: balance;
 }
 
 /* ─── Manifesto (editorial split) ────────────────────────────────── */
@@ -994,7 +1001,7 @@ footer .footer-beian a:hover { color: var(--fg); }
 </nav>
 
 <!-- ═══════════ Hero ═══════════ -->
-<section data-bk-block="prose" data-bk-variant="prose-center" style="--bkv-bg: transparent; --fg: rgb(17, 17, 17); --muted: rgb(107, 107, 107); --serif: &quot;Iowan Old Style&quot;, Charter, &quot;Times New Roman&quot;, Georgia, serif; padding-top: 148px;" id="top" data-bk-id="bk-block-2">
+<section data-bk-block="prose" data-bk-variant="prose-center" style="--bkv-bg: transparent; --fg: rgb(17, 17, 17); --muted: rgb(107, 107, 107); --serif: &quot;Iowan Old Style&quot;, Charter, &quot;Times New Roman&quot;, Georgia, &quot;Songti SC&quot;, &quot;Noto Serif SC&quot;, &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, serif; padding-top: 148px;" id="top" data-bk-id="bk-block-2">
 <style>
 [data-bk-variant='prose-center']{background:var(--bkv-bg,var(--bg,#fff));color:var(--fg,#111);font-family:inherit;padding:clamp(56px,8vw,104px) clamp(24px,5vw,64px);}
 [data-bk-variant='prose-center'] a{text-decoration:none;color:inherit;}
@@ -1016,12 +1023,12 @@ footer .footer-beian a:hover { color: var(--fg); }
 [data-bk-variant='prose-center'] .bkv-media{margin:clamp(28px,4vw,48px) auto 0;max-width:860px;}
 [data-bk-variant='prose-center'] .bkv-media > img{max-height:clamp(320px,46vh,520px);object-fit:cover;}
 </style>
-<div class="bkv-copy" data-bk-id="bk-block-2-1" style="max-width: 880px;"><h2 class="bkv-title" data-bk-slot="title" style="font-weight: 400; font-size: 70px; color: var(--fg); margin-bottom: 24px; letter-spacing: 1px;">Blink｜从想法到成稿</h2><p class="bkv-body" data-bk-slot="body" style="max-width: 640px; color: var(--muted);">一款本地优先的 AI 设计智能体。内置各类大厂的设计系统、丰富的设计模板。支持生成网页、幻灯片、移动端原型、图片——全部运行在你自己的电脑上。</p><div class="bkv-acts" style="margin-top: 32px;" data-bk-id="bk-block-2-1-2"><a href="./download.html" class="bkv-cta" style="display: inline-flex; align-items: center; gap: 8px; background: var(--fg,#111111); font-family: &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, sans-serif;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>下载桌面端</a></div></div>
+<div class="bkv-copy" data-bk-id="bk-block-2-1" style="max-width: 880px;"><h2 class="bkv-title" data-bk-slot="title" style="font-weight: 400; font-size: clamp(40px, 7.6vw, 70px); color: var(--fg); margin-bottom: 24px; letter-spacing: 1px;">Blink｜从想法到成稿</h2><p class="bkv-body" data-bk-slot="body" style="max-width: 640px; color: var(--muted);">一款本地优先的 AI 设计智能体。内置各类大厂的设计系统、丰富的设计模板。支持生成网页、幻灯片、移动端原型、图片——全部运行在你自己的电脑上。</p><div class="bkv-acts" style="margin-top: 32px;" data-bk-id="bk-block-2-1-2"><a href="./download.html" class="bkv-cta" style="display: inline-flex; align-items: center; gap: 8px; background: var(--fg,#111111); font-family: &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, sans-serif;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>下载桌面端</a></div></div>
 <div class="hero-deco">
 <figure class="bkv-media" data-bk-slot="media"><img src="assets/home-preview.png" alt="Blink 主页视觉" width="2160" height="1440" fetchpriority="high" decoding="async" style="width: 100%; height: auto; display: block; max-height: none; object-fit: contain; border-style: none; box-shadow: none; border-radius: min(16px, 1.86vw); background-color: #ffffff; filter: drop-shadow(rgba(0, 38, 55, 0.08) 0px 12px 60px);"></figure>
-  <div class="deco deco--a"><span class="deco__label">设计模版</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, serif; font-size: 17px;">一键复刻成稿</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n l1" x="0" y="2" width="94" height="9" rx="4.5"></rect><rect class="n l2" x="0" y="15.5" width="76" height="9" rx="4.5"></rect><rect class="a l3" x="0" y="29" width="58" height="9" rx="4.5"></rect></svg></span></div>
-  <div class="deco deco--b"><span class="deco__label">本地运行</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, serif;">数据不出设备</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n" x="0" y="3" width="46" height="28" rx="9"></rect><circle class="a dot" cx="23" cy="17" r="6"></circle><rect class="n b1" x="58" y="8" width="62" height="7" rx="3.5"></rect><rect class="n b2" x="58" y="19" width="44" height="7" rx="3.5"></rect></svg></span></div>
-  <div class="deco deco--c"><span class="deco__label">产物交付</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, serif; font-size: 15px;">一键导出分享</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n" x="0" y="2" width="30" height="30" rx="9"></rect><rect class="n" x="40" y="15.5" width="34" height="3" rx="1.5"></rect><rect class="n" x="84" y="2" width="30" height="30" rx="9"></rect><circle class="a send" cx="45" cy="17" r="4.5"></circle></svg></span></div>
+  <div class="deco deco--a"><span class="deco__label">设计模版</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, serif; font-size: 17px;">一键复刻成稿</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n l1" x="0" y="2" width="94" height="9" rx="4.5"></rect><rect class="n l2" x="0" y="15.5" width="76" height="9" rx="4.5"></rect><rect class="a l3" x="0" y="29" width="58" height="9" rx="4.5"></rect></svg></span></div>
+  <div class="deco deco--b"><span class="deco__label">本地运行</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, serif;">数据不出设备</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n" x="0" y="3" width="46" height="28" rx="9"></rect><circle class="a dot" cx="23" cy="17" r="6"></circle><rect class="n b1" x="58" y="8" width="62" height="7" rx="3.5"></rect><rect class="n b2" x="58" y="19" width="44" height="7" rx="3.5"></rect></svg></span></div>
+  <div class="deco deco--c"><span class="deco__label">产物交付</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, serif; font-size: 15px;">一键导出分享</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n" x="0" y="2" width="30" height="30" rx="9"></rect><rect class="n" x="40" y="15.5" width="34" height="3" rx="1.5"></rect><rect class="n" x="84" y="2" width="30" height="30" rx="9"></rect><circle class="a send" cx="45" cy="17" r="4.5"></circle></svg></span></div>
 </div>
 </section>
 
@@ -1139,7 +1146,7 @@ footer .footer-beian a:hover { color: var(--fg); }
 <section class="cta-section" id="contact" data-bk-id="bk-block-8">
   <div class="reveal">
     <p class="section-label" style="color:rgba(255,255,255,0.4);">Make the design simpler</p>
-    <h2 class="section-title" style="font-size: 56px; font-weight: 200; font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, serif;">让设计变得更简单</h2>
+    <h2 class="section-title" style="font-size: 56px; font-weight: 200; font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, serif;">让设计变得更简单</h2>
     <p class="cta-text" style="font-size: 16px;">一款本地优先的设计智能体</p>
     <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:center; margin-top:32px;"><a href="./download.html" class="cta-pill" style="display: inline-flex; align-items: center; gap: 8px; background-color: var(--bg, #ffffff); color: var(--fg, #111111); border: 1px solid var(--border, #e5e5e5); border-radius: 999px; padding: 11px 22px; font-size: 14px; font-weight: 600; text-decoration: none;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_326_9164)">
@@ -1642,6 +1649,11 @@ revealEls.forEach(el => observer.observe(el));
     title.classList.remove('particle-title');
     /* 减弱动态:原样保留文字,不做任何处理 */
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    /* 触摸设备没有「把指针移开」这个动作:手指点一下会触发 pointermove、
+       把 pointer.active 置真且坐标停在字身上,而 pointerleave 永远不来 —— 粒子就粘住,
+       非得滚动到坐标落出字外才恢复。hover 档在没有真悬停能力的设备上直接不挂,
+       标题保持实心文字。常驻粒子档(#contact)不受影响。 */
+    if (opts.hover && !window.matchMedia('(hover: hover)').matches) return;
 
     const host = title.parentElement;
     if (!host) return;
@@ -1886,6 +1898,11 @@ revealEls.forEach(el => observer.observe(el));
 
     window.addEventListener('resize', () => queueBuild(false));
     window.addEventListener('pointermove', e => {
+      /* 触摸/笔不参与悬停判定。手指点一下会触发 pointermove 把 active 置真、
+         坐标停在字上,而 pointerleave 永不到来 —— 粒子就粘住了。
+         这里按 pointerType 直接挡掉,比只依赖 (hover:hover) 媒体查询稳:
+         媒体查询在部分环境下要等一会儿才是准的,而 pointerType 每个事件都带。 */
+      if (e.pointerType && e.pointerType !== 'mouse') { pointer.active = false; return; }
       pointer.clientX = e.clientX;
       pointer.clientY = e.clientY;
       pointer.active = true;
