@@ -188,7 +188,17 @@ nav .nav-links a::after {
 }
 nav .nav-links a:hover { color: var(--fg); }
 nav .nav-links a:hover::after { transform: scaleX(1); }
-.nav-toggle { display: none; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--fg); }
+/* 汉堡按钮(只在窄屏出现):图标落位不动,只把可点区域撑到约 44×44 ——
+   padding 把盒子撑开、等量负外边距再抵消回去,所以它在导航里的位置与原来完全一致。
+   顺带去掉移动端点按时那块灰色高亮(-webkit-tap-highlight-color)。 */
+.nav-toggle {
+  display: none;
+  background: none; border: none;
+  font-size: 22px; cursor: pointer; color: var(--fg);
+  padding: 9px 12px;
+  margin: -9px -12px;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ─── Scroll reveal ──────────────────────────────────────────────── */
 .reveal {
@@ -921,10 +931,11 @@ footer .footer-beian a:hover { color: var(--fg); }
   nav.scrolled { left: 12px; right: 12px; }
   /* 展开菜单跟胶囊是同一块玻璃:底色 / 模糊 / 投影 / 上下亮的渐变环全走上面那套,
      配方与 nav.scrolled + nav::before 同源 —— 改材质记得两处一起改。
-     离胶囊留 8px:两块玻璃贴在一起会在接缝处叠出双描边和双投影。 */
+     通栏态(页面顶部)导航自己不是玻璃,面板直接贴在导航下沿、左右离屏幕边 16px;
+     悬浮胶囊态见下面那条覆盖规则 —— 跟胶囊左右对齐并留 8px 接缝,
+     否则两块玻璃贴在一起会在接缝处叠出双描边和双投影。 */
   nav .nav-links {
-    display: none;
-    position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+    position: absolute; top: 100%; left: 16px; right: 16px;
     background-color: var(--nav-sheet-fill);
     background-blend-mode: luminosity;
     backdrop-filter: blur(var(--nav-sheet-blur));
@@ -932,10 +943,31 @@ footer .footer-beian a:hover { color: var(--fg); }
                 0 2px 6px  rgba(30,70,90,.015),
                 0 12px 64px rgba(30,70,90,.10);
     flex-direction: column;
-    padding: var(--space-4) var(--space-6);
-    gap: var(--space-4);
+    /* 面板自己只留 8px 内边距,行与行之间的空隙改由每条列表项的 padding 撑起来 ——
+       这样一整条都是可点区域,而文字落位跟原来的「面板 16/24 + 列间距 16」基本一致。 */
+    padding: var(--space-2);
+    gap: 0;
     border-radius: 18px;                      /* 配合悬浮态的圆角,展开面板不再是方角 */
+    /* 收起态不用 display:none —— 那样没有中间态、做不了过渡。改成
+       透明 + 轻微上移收缩 + visibility 收走;visibility 延到位移结束再切,
+       收起时面板不会中途凭空消失。 */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px) scale(.98);
+    transform-origin: top center;
+    pointer-events: none;
+    transition: opacity 180ms var(--ease-out),
+                transform 240ms var(--ease-out),
+                visibility 0s linear 240ms;
   }
+  /* 一整条都能点:链接铺满整行,上下 12 / 左右 16 把行高撑到约 45px。
+     横排导航那条悬浮下划线在这里会横贯整块面板,窄屏关掉。 */
+  nav .nav-links a {
+    display: block;
+    padding: var(--space-3) var(--space-4);
+    border-radius: 12px;                      /* 点按高亮跟着圆角走,不会戳出面板的圆角 */
+  }
+  nav .nav-links a::after { display: none; }
   nav .nav-links::before {
     content: '';
     position: absolute; inset: 0;
@@ -951,7 +983,17 @@ footer .footer-beian a:hover { color: var(--fg); }
     -webkit-mask-composite: xor;
     mask-composite: exclude;
   }
-  nav .nav-links.open { display: flex; }
+  nav .nav-links.open {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+    transition: opacity 180ms var(--ease-out),
+                transform 240ms var(--ease-out),
+                visibility 0s;
+  }
+  /* 悬浮胶囊态:面板跟胶囊左右对齐(胶囊自己已离屏幕边 12px),并保留 8px 接缝 */
+  nav.scrolled .nav-links { top: calc(100% + 8px); left: 0; right: 0; }
   .nav-toggle { display: block; }
   .projects-grid { grid-template-columns: 1fr; }
   /* 单列竖着堆,不需要等高,去掉最小高度免得说明和插画之间空一大截 */
