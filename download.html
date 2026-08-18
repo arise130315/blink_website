@@ -35,8 +35,10 @@ body {
   font-size: 16px;
   line-height: 1.6;
   color: var(--fg);
-  /* 首页是 three.js 水波,子页不值得为背景加载 600KB;用同色系静态渐变呼应 */
-  background: linear-gradient(180deg, #eaf3fb 0%, var(--bg) 62%);
+  /* 首页是 three.js 水波,子页不值得为背景加载 600KB;用同色系静态渐变呼应。
+     打底色不能省:iOS Safari 用 body 的 background-color 填状态栏,只写渐变时它取到
+     transparent、退回白色,页面顶端(#eaf3fb)和状态栏之间就切出一条白边。 */
+  background: #eaf3fb linear-gradient(180deg, #eaf3fb 0%, var(--bg) 62%);
   min-height: 100vh;
 }
 
@@ -158,13 +160,16 @@ h1 {
 /* 字号/颜色与「目前仅支持平台」那行(.platforms)完全一致 */
 .notes summary {
   cursor: pointer; font-size: 13px; color: var(--meta); list-style: none;
-  display: inline-flex; align-items: center; gap: 6px;
 }
 .notes summary::-webkit-details-marker { display: none; }
 .notes summary:hover { color: var(--fg); }
 /* 箭头 = RemixIcon arrow-down-s-line,路径从项目自带的 remixicon.woff2 里
    按码位 U+EA4E 提取(em 1200 / ascent 1020),已翻转 y 轴转成 SVG 坐标 */
-.notes__chev { width: 14px; height: 14px; flex-shrink: 0; transition: transform 200ms var(--ease-out); }
+/* 箭头跟在文末:行内元素随文字流走。inline-block 不能省 —— 纯 inline 的 svg 拿不到
+   transform,展开时那个 rotate(180deg) 会被丢掉(实测桌面与 iOS 一致)。 */
+.notes__chev { display: inline-block; width: 14px; height: 14px; margin-left: 4px; vertical-align: -2px; transition: transform 200ms var(--ease-out); }
+/* 末句与箭头绑成一体:中文可在任意字符间断行,不锁住的话箭头会被挤到下一行落单 */
+.notes__tail { white-space: nowrap; }
 .notes[open] .notes__chev { transform: rotate(180deg); }
 .notes__body {
   margin-top: var(--space-4); padding: var(--space-6);
@@ -238,7 +243,7 @@ h1 {
     </div>
 
     <details class="notes">
-      <summary>首次打开会提示「无法验证开发者」，点这里看怎么办<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary>
+      <summary>首次打开会提示「无法验证开发者」，<span class="notes__tail">点这里看怎么办<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></span></summary>
       <div class="notes__body">
         安装包目前没有做苹果公证，首次打开时系统会拦一下。不影响使用，按这四步走:
         <ol>

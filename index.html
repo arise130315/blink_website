@@ -45,8 +45,11 @@ body {
   font-size: 16px;
   line-height: 1.6;
   color: var(--fg);
-  /* 背景由 blink 水波画布(#app)承担;此处仅作兜底海报(画布加载失败/减弱动态时露出) */
-  background: #eaf3fb url('./hero.jpg') center top / cover no-repeat;
+  /* 背景由 blink 水波画布(#app)承担;此处仅作兜底海报(画布加载失败/减弱动态时露出)。
+     底色必须贴着画布顶端的天空色:iOS Safari 用 body 的 background-color 去填状态栏和
+     底部工具栏,它看不见画布画出来的像素 —— 两个色对不上,状态栏底缘就切出一条硬边。
+     实测画布顶端 rgb(209,242,254)(iPhone 竖屏 402pt),换画布配色时这里要跟着重取。 */
+  background: #D1F2FE url('./hero.jpg') center top / cover no-repeat;
   overflow-x: hidden;
 }
 
