@@ -999,6 +999,16 @@ footer .footer-beian a:hover { color: var(--fg); }
   /* 单列竖着堆,不需要等高,去掉最小高度免得说明和插画之间空一大截 */
   .project-card { min-height: 0; }
   .services-grid { grid-template-columns: 1fr; }
+  /* 主标题窄屏分两行:「Blink」独占第一行、比第二行大 1.3 倍,中间那个逗号只在
+     一行排得下时才有意义,分行后隐藏。字号写在 span 上用 em ——
+     h2 的 font-size 是行内样式,在这里写会被行内样式压过(除非上 !important)。
+     第二行 6 个汉字在 344px 以下排不进版心会二次折行(变成三行),所以给它一个
+     兜底上限:(视口 - 48 版心留白 - 6 字距) ÷ 6 字 ≈ 16.6vw - 9px,344px 以上不起作用。
+     第一行由第二行乘 1.3 推出来,窄到要缩字时两行仍是 1.3 倍。 */
+  .bkv-title { --title-line2: min(1em, calc(16.6vw - 9px)); }
+  .title-sep { display: none; }
+  .title-brand { display: block; font-size: calc(var(--title-line2) * 1.3); }
+  .title-tail { display: block; font-size: var(--title-line2); }
   .hero { min-height: auto; padding: 100px var(--space-4) var(--space-12); }
   .hero-text h1 { font-size: clamp(36px, 10vw, 52px); }
   .hero-collage { max-height: 280px; }
@@ -1068,7 +1078,7 @@ footer .footer-beian a:hover { color: var(--fg); }
 [data-bk-variant='prose-center'] .bkv-media{margin:clamp(28px,4vw,48px) auto 0;max-width:860px;}
 [data-bk-variant='prose-center'] .bkv-media > img{max-height:clamp(320px,46vh,520px);object-fit:cover;}
 </style>
-<div class="bkv-copy" data-bk-id="bk-block-2-1" style="max-width: 880px;"><h2 class="bkv-title" data-bk-slot="title" style="font-weight: 400; font-size: clamp(48px, 7.6vw, 70px); color: var(--fg); margin-bottom: 24px; letter-spacing: 1px;">Blink｜从想法到成稿</h2><p class="bkv-body" data-bk-slot="body" style="max-width: 640px; color: var(--muted);">一款本地优先的 AI 设计智能体。内置各类大厂的设计系统、丰富的设计模板。支持生成网页、幻灯片、移动端原型、图片——全部运行在你自己的电脑上。</p><div class="bkv-acts" style="margin-top: 32px;" data-bk-id="bk-block-2-1-2"><a href="./download.html" class="bkv-cta" style="display: inline-flex; align-items: center; gap: 8px; background: var(--fg,#111111); font-family: &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, sans-serif;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>下载桌面端</a></div></div>
+<div class="bkv-copy" data-bk-id="bk-block-2-1" style="max-width: 880px;"><h2 class="bkv-title" data-bk-slot="title" style="font-weight: 400; font-size: clamp(48px, 7.6vw, 70px); color: var(--fg); margin-bottom: 24px; letter-spacing: 1px;"><span class="title-brand">Blink</span><span class="title-sep">，</span><span class="title-tail">从想法到成稿</span></h2><p class="bkv-body" data-bk-slot="body" style="max-width: 640px; color: var(--muted);">一款本地优先的 AI 设计智能体。内置各类大厂的设计系统、丰富的设计模板。支持生成网页、幻灯片、移动端原型、图片——全部运行在你自己的电脑上。</p><div class="bkv-acts" style="margin-top: 32px;" data-bk-id="bk-block-2-1-2"><a href="./download.html" class="bkv-cta" style="display: inline-flex; align-items: center; gap: 8px; background: var(--fg,#111111); font-family: &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, sans-serif;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>下载桌面端</a></div></div>
 <div class="hero-deco">
 <figure class="bkv-media" data-bk-slot="media"><img src="assets/home-preview.png" alt="Blink 主页视觉" width="2160" height="1440" fetchpriority="high" decoding="async" style="width: 100%; height: auto; display: block; max-height: none; object-fit: contain; border-style: none; box-shadow: none; border-radius: min(16px, 1.86vw); background-color: #ffffff; filter: drop-shadow(rgba(0, 38, 55, 0.08) 0px 12px 60px);"></figure>
   <div class="deco deco--a"><span class="deco__label">设计模版</span><p class="deco__title" style="font-family: &quot;Noto Serif SC&quot;, &quot;Source Han Serif SC&quot;, &quot;Songti SC&quot;, &quot;PingFang SC&quot;, &quot;Hiragino Sans GB&quot;, &quot;Microsoft YaHei&quot;, serif; font-size: 17px;">一键复刻成稿</p><span class="deco__mark" aria-hidden="true"><svg viewBox="0 0 120 40" preserveAspectRatio="xMinYMid meet" xmlns="http://www.w3.org/2000/svg"><rect class="n l1" x="0" y="2" width="94" height="9" rx="4.5"></rect><rect class="n l2" x="0" y="15.5" width="76" height="9" rx="4.5"></rect><rect class="a l3" x="0" y="29" width="58" height="9" rx="4.5"></rect></svg></span></div>
