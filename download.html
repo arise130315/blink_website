@@ -184,6 +184,21 @@ h1 {
   background: var(--border-soft); padding: 2px 6px; border-radius: 5px;
 }
 
+/* 本次更新:与 .notes__body 同一张卡的配方(surface 底 + border-soft 描边 + 14 圆角),
+   只多一行标题。位置在下载按钮之后 —— 从应用内更新气泡点过来的人,就是想看这版
+   改了什么;气泡里只给得下一句话,完整清单在这儿。 */
+.whatsnew {
+  max-width: 840px; margin: var(--space-12) auto 0;
+  padding: var(--space-6);
+  background: var(--surface); border: 1px solid var(--border-soft); border-radius: 14px;
+  text-align: left;
+}
+/* 标题行字号/颜色与「目前仅支持平台」那行(.platforms)一致 */
+.whatsnew__head { font-size: 13px; color: var(--meta); margin-bottom: var(--space-3); }
+.whatsnew__list { margin: 0; padding-left: 20px; font-size: 14px; color: var(--fg-2); }
+.whatsnew__list li { margin-bottom: 6px; }
+.whatsnew__list li:last-child { margin-bottom: 0; }
+
 /* 页脚 */
 .foot {
   max-width: 840px; margin: var(--space-16) auto 0; padding-top: var(--space-8);
@@ -242,6 +257,15 @@ h1 {
         直接下载
       </a>
     </div>
+
+    <section class="whatsnew">
+      <div class="whatsnew__head">本次更新 · v0.5.4</div>
+      <ul class="whatsnew__list">
+        <li>有新版本时会主动提示：侧栏底部浮出更新气泡，可以直接去下载，也可以点「稍后」收起</li>
+        <li>收起后「设置 → 关于Blink」留一个红点，版本行直接给出「下载最新版本」</li>
+        <li>修复：暗色模式下首页背景光点过亮</li>
+      </ul>
+    </section>
 
     <details class="notes">
       <summary>首次打开会提示「无法验证开发者」，<span class="notes__tail">点这里看怎么办<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></span></summary>
