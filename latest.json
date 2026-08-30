@@ -1,5 +1,5 @@
 {
-  "version": "0.5.4",
+  "version": "0.5.5",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "有新版会主动提示，暗色下首页光点过亮已修复"
+  "notes": "现在可以直接把作品提交到 GitHub"
 }
