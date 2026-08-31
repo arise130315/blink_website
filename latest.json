@@ -1,5 +1,5 @@
 {
-  "version": "0.5.6",
+  "version": "0.5.7",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "复杂任务改为多个子助手并行处理,另有 4 项改进"
+  "notes": "子助手协作修好三处,另有 1 项改进"
 }
