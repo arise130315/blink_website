@@ -1,5 +1,5 @@
 {
-  "version": "0.5.8",
+  "version": "0.5.9",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "开新任务少问一轮就能开工，改稿不再「找不到位置就整页重写」，另有 3 项改进"
+  "notes": "修复已知 bug,含导入技能包后成品交付失败"
 }
