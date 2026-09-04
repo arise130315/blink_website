@@ -1,5 +1,5 @@
 {
-  "version": "0.5.9",
+  "version": "0.6.0",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "修复已知 bug,含导入技能包后成品交付失败"
+  "notes": "修复已知 bug"
 }
