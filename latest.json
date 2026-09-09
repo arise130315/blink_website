@@ -1,5 +1,5 @@
 {
-  "version": "0.6.3",
+  "version": "0.6.4",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "修复已知 bug"
+  "notes": "新增流程画布: 把 HTML 原型的隐藏状态铺成一张可交互的画布"
 }
