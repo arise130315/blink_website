@@ -1,5 +1,5 @@
 {
-  "version": "0.6.4",
+  "version": "0.6.5",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "新增流程画布: 把 HTML 原型的隐藏状态铺成一张可交互的画布"
+  "notes": "流程画布一键生成: 点「开始分析」交给 agent，画布自动铺出画板"
 }
