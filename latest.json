@@ -1,5 +1,5 @@
 {
-  "version": "0.6.6",
+  "version": "0.6.7",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "流程画布改版: 6 档背景、长按拖动排布，另有 4 项改进"
+  "notes": "需求说清楚了就直接开工，不再先弹信息补充表单"
 }
