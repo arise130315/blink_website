@@ -1,5 +1,5 @@
 {
-  "version": "0.6.5",
+  "version": "0.6.6",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "流程画布一键生成: 点「开始分析」交给 agent，画布自动铺出画板"
+  "notes": "流程画布改版: 6 档背景、长按拖动排布，另有 4 项改进"
 }
