@@ -1,5 +1,5 @@
 {
-  "version": "0.6.7",
+  "version": "0.6.8",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "需求说清楚了就直接开工，不再先弹信息补充表单"
+  "notes": "复杂任务不再被步数上限卡住，修复「自动验收未通过」误判，另有 2 项改进"
 }
