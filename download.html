@@ -240,7 +240,7 @@ h1 {
     <div class="card">
       <div>
         <div class="card__name">Apple 芯片版</div>
-        <div class="card__meta">适用于 M 系列芯片 · DMG · 158 MB · v0.6.8</div>
+        <div class="card__meta">适用于 M 系列芯片 · DMG · 158 MB · v0.6.9</div>
       </div>
       <span class="card__tag" id="cardtag">推荐</span>
     </div>
@@ -252,19 +252,19 @@ h1 {
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8Z"></path></svg>
         GitHub 下载
       </a>
-      <a class="pill pill--ghost" href="https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-0.6.8-mac-arm64.dmg">
+      <a class="pill pill--ghost" href="https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-0.6.9-mac-arm64.dmg">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         直接下载
       </a>
     </div>
 
     <section class="whatsnew">
-      <div class="whatsnew__head">本次更新 · v0.6.8</div>
+      <div class="whatsnew__head">本次更新 · v0.6.9</div>
       <ul class="whatsnew__list">
-        <li>复杂任务不再被步数上限卡住，智能体会把活做完再收尾</li>
-        <li>截图等对话附件不再落进你的项目文件夹</li>
-        <li>修复任务明明做完了、却提示「自动验收未通过」的误判；页面自查不再乱报重叠、裁剪</li>
-        <li>新增页面交互测试：智能体可以在内置浏览器里真的点一点、拖一拖来验收页面</li>
+        <li>修好上一版的页面交互测试：它此前因为一处接线问题从没真跑起来过，现在点击、输入、拖拽、断言都会在内置浏览器里真做一遍</li>
+        <li>页面测试新增长按拖拽，并支持网页原生的拖放 —— 拖卡片、拖排序这类交互测得了</li>
+        <li>每个新任务不再重复消耗整份上下文，起步更快也更省</li>
+        <li>设置面板侧栏底色微调</li>
       </ul>
     </section>
 

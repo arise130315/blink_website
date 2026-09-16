@@ -1,5 +1,5 @@
 {
-  "version": "0.6.8",
+  "version": "0.6.9",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "复杂任务不再被步数上限卡住，修复「自动验收未通过」误判，另有 2 项改进"
+  "notes": "页面交互测试修好并支持拖拽，新任务起步更省更快，另有 2 项改进"
 }
