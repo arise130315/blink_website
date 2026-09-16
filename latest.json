@@ -1,5 +1,5 @@
 {
-  "version": "0.6.9",
+  "version": "0.6.10",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "页面交互测试修好并支持拖拽，新任务起步更省更快，另有 2 项改进"
+  "notes": "助手对前几轮做过的事记得更全，页面测试没跑完会如实说明原因"
 }
