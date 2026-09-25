@@ -1,5 +1,5 @@
 {
-  "version": "0.7.3",
+  "version": "0.7.4",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "界面去掉边框感更清爽，另修复网页刷新后预览空白"
+  "notes": "新增首次启动引导与「Mac 文件夹」连接器，另有 2 项改进"
 }
