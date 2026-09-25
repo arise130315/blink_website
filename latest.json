@@ -1,5 +1,5 @@
 {
-  "version": "0.7.2",
+  "version": "0.7.3",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "记忆更准、协作习惯每次对话都带上，另有 3 项改进"
+  "notes": "界面去掉边框感更清爽，另修复网页刷新后预览空白"
 }
