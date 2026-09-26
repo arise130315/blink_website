@@ -1,5 +1,5 @@
 {
-  "version": "0.7.4",
+  "version": "0.7.5",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "新增首次启动引导与「Mac 文件夹」连接器，另有 2 项改进"
+  "notes": "更新提示支持分条显示，一眼看清新版改了什么"
 }
