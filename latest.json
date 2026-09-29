@@ -1,5 +1,5 @@
 {
-  "version": "0.7.6",
+  "version": "0.7.7",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "自动恢复上次使用的在线模型\n命令行模型改为平台二级菜单\n文件记录只保留真正产物"
+  "notes": "新增浏览器控制，后台帮你操作网页\n修复自动压缩一直失败\n内置技能授权重启后不再丢失\n连接器截图不再混进产物"
 }
