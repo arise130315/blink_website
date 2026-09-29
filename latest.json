@@ -1,5 +1,5 @@
 {
-  "version": "0.7.5",
+  "version": "0.7.6",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "更新提示支持分条显示，一眼看清新版改了什么"
+  "notes": "自动恢复上次使用的在线模型\n命令行模型改为平台二级菜单\n文件记录只保留真正产物"
 }
