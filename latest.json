@@ -1,5 +1,5 @@
 {
-  "version": "0.7.7",
+  "version": "0.7.8",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "新增浏览器控制，后台帮你操作网页\n修复自动压缩一直失败\n内置技能授权重启后不再丢失\n连接器截图不再混进产物"
+  "notes": "新增「人设与档案」，可查看修改\n记忆新增「约定事项」\n技能库新增「GSAP 动效」\n本地数据重新整理，升级自动迁移"
 }
