@@ -1,5 +1,5 @@
 {
-  "version": "0.7.8",
+  "version": "0.7.9",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "新增「人设与档案」，可查看修改\n记忆新增「约定事项」\n技能库新增「GSAP 动效」\n本地数据重新整理，升级自动迁移"
+  "notes": "Claude/Codex 未登录可一键连接\n默认改用在线模型\n报错改为中文说明\n欢迎页新增出场动画"
 }
