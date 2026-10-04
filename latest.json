@@ -1,5 +1,5 @@
 {
-  "version": "0.7.9",
+  "version": "0.8.0",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "Claude/Codex 未登录可一键连接\n默认改用在线模型\n报错改为中文说明\n欢迎页新增出场动画"
+  "notes": "新增随任务变化的 Blink 动态头像\n修复首页背景偶发加载失败\n改善长页面预览稳定性"
 }
