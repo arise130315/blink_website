@@ -1,5 +1,5 @@
 {
-  "version": "0.8.3",
+  "version": "0.8.4",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "并行子任务更快\n小任务不再多余拆分\n子任务限流自动重试\n关闭思考对子任务生效\n临时交代不再记成长期习惯"
+  "notes": "分享改为登录账号后使用\n分享链接有效期延长到 15 天\n分享页提示栏不再挡住导航"
 }
