@@ -1,5 +1,5 @@
 {
-  "version": "0.8.4",
+  "version": "0.8.5",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "分享改为登录账号后使用\n分享链接有效期延长到 15 天\n分享页提示栏不再挡住导航"
+  "notes": "新增主要聊天入口\n修复项目切换卡在加载\n完善账号与记忆同步\n任务规划接入云端提醒\n统一空状态插图与设置"
 }
