@@ -1,5 +1,5 @@
 {
-  "version": "0.8.5",
+  "version": "0.8.6",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "新增主要聊天入口\n修复项目切换卡在加载\n完善账号与记忆同步\n任务规划接入云端提醒\n统一空状态插图与设置"
+  "notes": "更新 DeepSeek Flash 模型\n保留原有模型与思考设置"
 }
