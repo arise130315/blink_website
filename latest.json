@@ -1,5 +1,5 @@
 {
-  "version": "0.8.6",
+  "version": "0.8.7",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "更新 DeepSeek Flash 模型\n保留原有模型与思考设置"
+  "notes": "DeepSeek 支持联网搜索\n复用现有密钥并提供来源"
 }
