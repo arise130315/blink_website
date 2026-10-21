@@ -1,5 +1,5 @@
 {
-  "version": "0.8.7",
+  "version": "0.8.8",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "DeepSeek 支持联网搜索\n复用现有密钥并提供来源"
+  "notes": "长元素名称自动省略\n切页保留未发送附件"
 }
