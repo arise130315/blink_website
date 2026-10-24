@@ -1,5 +1,5 @@
 {
-  "version": "0.8.9",
+  "version": "0.9.0",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "新增想法任务与交付选择\n连接器操作更可靠\n修复提问表单显示异常\n聊天回复更简洁"
+  "notes": "未选网页模板时自主设计\n想法列表视觉更清晰\n切回想法页保留内容"
 }
