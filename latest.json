@@ -1,5 +1,5 @@
 {
-  "version": "0.8.8",
+  "version": "0.8.9",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "长元素名称自动省略\n切页保留未发送附件"
+  "notes": "新增想法任务与交付选择\n连接器操作更可靠\n修复提问表单显示异常\n聊天回复更简洁"
 }
