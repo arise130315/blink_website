@@ -1,5 +1,5 @@
 {
-  "version": "0.9.0",
+  "version": "0.9.1",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "未选网页模板时自主设计\n想法列表视觉更清晰\n切回想法页保留内容"
+  "notes": "修复连接器连接状态误报\n新连接工具即装即用\n连接器自动显示应用图标"
 }
