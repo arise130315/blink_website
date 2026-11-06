@@ -1,5 +1,5 @@
 {
-  "version": "0.9.1",
+  "version": "1.0.0",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "修复连接器连接状态误报\n新连接工具即装即用\n连接器自动显示应用图标"
+  "notes": "通过苹果公证，打开不再被拦\n新增 Intel 芯片版\n新增条件提醒，每分钟检查\n对话可转为任务自动继续\n另有 4 项改进"
 }
