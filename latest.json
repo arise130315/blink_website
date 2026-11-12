@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "通过苹果公证，打开不再被拦\n新增 Intel 芯片版\n新增条件提醒，每分钟检查\n对话可转为任务自动继续\n另有 4 项改进"
+  "notes": "模型 Key 填一次，本机云端都能用\n主要聊天长任务转交并显示进度\n任务原地打转时提醒你\n修复已完成的回答显示成失败\n另有 3 项改进"
 }
