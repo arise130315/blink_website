@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.1",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "模型 Key 填一次，本机云端都能用\n主要聊天长任务转交并显示进度\n任务原地打转时提醒你\n修复已完成的回答显示成失败\n另有 3 项改进"
+  "notes": "新增「默认」模型，登录即送 1000 点\n需要注册登录后使用\n模型列表精简为「默认」与 DeepSeek\n账号页可看剩余点数和用量"
 }

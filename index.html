@@ -865,6 +865,8 @@ section { position: relative; }
 .cta-pill:hover { background-color: #ececec !important; border-color: #ffffff !important; }
 .cta-pill:active { background-color: #dcdcdc !important; transform: translateY(1px); }
 /* 键盘选中(焦点环):三颗按钮统一 accent 蓝描边,提升可访问性 */
+/* 内测名额满:下载按钮置灰、不可点(由页尾脚本按账号服务的剩余名额加上) */
+.bkv-cta.is-full, .cta-pill.is-full { opacity: .4; cursor: default; pointer-events: none; box-shadow: none; transform: none; }
 .bkv-cta:focus-visible, .bkv-cta2:focus-visible, .cta-pill:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -1974,4 +1976,22 @@ revealEls.forEach(el => observer.observe(el));
 </script>
 
 
+<script>
+/* 内测名额满了:首页的「下载 Blink」置灰,状态行换成说明。读不到名额就什么都不改。 */
+(function () {
+  fetch('https://app.blinkwork.cn/v1/capacity', { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (c) {
+      if (!c || c.remaining !== 0) return;
+      document.querySelectorAll('a.bkv-cta[href="./download.html"], a.cta-pill[href="./download.html"]').forEach(function (a) {
+        a.removeAttribute('href');
+        a.setAttribute('aria-disabled', 'true');
+        a.classList.add('is-full');
+      });
+      var status = document.querySelector('.hero-status');
+      if (status) status.textContent = '内测用户已满，待后续开放更多名额';
+    })
+    .catch(function () {});
+})();
+</script>
 </body></html>

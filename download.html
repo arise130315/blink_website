@@ -270,9 +270,9 @@ h1 {
         <div class="dl__row">
           <div class="dl__info">
             <div class="dl__name">Apple 芯片版<span class="dl__tag" id="cardtag">推荐</span></div>
-            <div class="dl__meta">适用于 M 系列芯片 · DMG · 163 MB · v1.0.1</div>
+            <div class="dl__meta">适用于 M 系列芯片 · DMG · 163 MB · v1.1</div>
           </div>
-          <a class="pill pill--primary" href="https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.0.1-mac-arm64.dmg">
+          <a class="pill pill--primary" href="https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.1-mac-arm64.dmg">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             下载
           </a>
@@ -280,14 +280,15 @@ h1 {
         <div class="dl__row">
           <div class="dl__info">
             <div class="dl__name">Intel 芯片版</div>
-            <div class="dl__meta">适用于 Intel 芯片的 Mac · DMG · 174 MB · v1.0.1</div>
+            <div class="dl__meta">适用于 Intel 芯片的 Mac · DMG · 174 MB · v1.1</div>
           </div>
-          <a class="pill pill--primary" href="https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.0.1-mac-x64.dmg">
+          <a class="pill pill--primary" href="https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.1-mac-x64.dmg">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M1.5 11.5V12.5C1.5 13.6046 2.39543 14.5 3.5 14.5H12.5C13.6046 14.5 14.5 13.6046 14.5 12.5V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 1.5V10.5M8 10.5L4.75 7.25M8 10.5L11.25 7.25" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
             下载
           </a>
         </div>
       </div>
+      <p class="crossnote" id="fullnote" hidden>内测用户已满，待后续开放更多名额</p>
       <p class="crossnote" id="crossnote" hidden>此安装包适用于 Mac，无法安装到当前设备。iPhone 版正在审核，即将上架 App Store。</p>
     </div>
 
@@ -303,18 +304,16 @@ h1 {
       </div>
     </div>
 
-    <p class="setup-note">首次使用需要配置可用的模型通道。Mac 本机使用无需 Blink 账号，云端项目需要登录。</p>
+    <p class="setup-note">注册登录后即可使用。新账号送 1000 点「默认」模型额度，不用先配置密钥。</p>
 
     <section class="whatsnew">
-      <div class="whatsnew__head">本次更新 · v1.0.1</div>
+      <div class="whatsnew__head">本次更新 · v1.1</div>
       <ul class="whatsnew__list">
-        <li>模型 Key 填一次，本机和云端都能用：登录后 Mac 上填的 Key 自动同步到云端，主要聊天和手机不用再填。</li>
-        <li>主要聊天里较长的制作会转交给任务，头像下显示当前步骤；任务需要补充信息时直接在聊天里一次问一个问题。</li>
-        <li>任务反复执行同一步、文件却没有变化时，会提醒你。</li>
-        <li>登录页显示剩余注册名额，名额满时可以登记等候。</li>
-        <li>修复已经完成的回答被显示成「失败」。</li>
-        <li>修复在已有网页里说「绘制……」时，被误当成要一张新图片。</li>
-        <li>不再自动弹出「做成技能」提示卡；侧栏「主要聊天」换了新图标。</li>
+        <li>新增「默认」模型：注册登录即送 1000 点，不用配置密钥就能开始用。</li>
+        <li>需要注册登录后使用；内测名额满时可以登记等候。</li>
+        <li>模型列表精简为「默认」与 DeepSeek，其他模型可用「自定义模型」接入。</li>
+        <li>设置里去掉读图、视频、音频三项；看不了图的自定义模型会借「默认」读图。</li>
+        <li>账号页可以查看剩余点数和最近 30 天用量。</li>
       </ul>
     </section>
 
@@ -337,11 +336,11 @@ h1 {
       <details class="faq__item"><summary>Super Agent 是什么方向？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>Blink 正朝着更自主的个人智能体（Super Agent）演进：理解目标、拆解任务、调用工具，持续推进到可用成果，减少反复交代与盯守。这是产品演进方向，具体能力以当前版本为准。</p></details>
       <details class="faq__item"><summary>手机可以看到 Mac 上的所有项目吗？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>iPhone 和网页连接云端项目。Mac 本机项目不会自动出现在其他设备，需要主动移到云端；iPhone 版正在审核，即将上架 App Store。</p></details>
       <details class="faq__item"><summary>记忆会跟随账号吗？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>登录同一账号后，全局记忆、档案和相关设置可以同步，联网并同步成功后在其他设备使用。项目文件、项目专属记忆、技能和模型密钥不随这条同步链全部共享；本机项目仍需主动移到云端。</p></details>
-      <details class="faq__item"><summary>需要登录吗？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>Mac 本机使用无需 Blink 账号；使用云端项目、网页版和 iPhone 版需要登录。模型和外部服务可能还需要单独配置。</p></details>
+      <details class="faq__item"><summary>需要登录吗？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>需要。从 1.1 起 Mac 版注册登录后使用；云端项目、网页版和 iPhone 版用同一个账号登录。外部服务可能还需要单独连接。</p></details>
       <details class="faq__item"><summary>文件和数据保存在哪里？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>Mac 本机项目保存在当前电脑。云端项目在服务器保存和处理；调用在线模型时，本轮任务所需内容会发送给对应模型服务商。分享、连接外部服务或同步手机资料，也会产生相应的数据传输。</p></details>
       <details class="faq__item"><summary>Mac 关机后任务会继续吗？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>仅依赖云端资源的任务不需要 Mac 开机。需要 Mac 本机文件或工具的步骤，仍要求对应电脑在线且 Blink 保持运行；涉及 iPhone 的操作，还取决于手机是否在线、权限是否开放，以及是否需要你在前台接手。</p></details>
       <details class="faq__item"><summary>办公文件可以怎么修改？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>Blink 可以生成办公文件并预览内容，也可以通过对话继续调整。导出后，可在 PowerPoint、Word、Excel、WPS 等兼容软件中继续编辑。网页作品与网页幻灯片还可以在 Blink 中进行可视化精修。</p></details>
-      <details class="faq__item"><summary>需要自己配置模型吗？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>当前版本需要配置可用的模型通道。不同模型支持的图片、工具和生成能力可能不同，费用按所选模型或服务的规则计算。</p></details>
+      <details class="faq__item"><summary>需要自己配置模型吗？<svg class="notes__chev" viewBox="0 0 1200 1200" fill="currentColor" aria-hidden="true"><path d="M600 653 847 406 918 476 600 794 282 476 353 406Z"></path></svg></summary><p>不用。新账号送 1000 点「默认」模型额度，登录就能用；点数用完后可以换成自己的 DeepSeek 密钥或自定义模型。不同模型支持的图片、工具和生成能力可能不同，费用按所选模型或服务的规则计算。</p></details>
     </section>
   </div>
 
@@ -389,6 +388,26 @@ h1 {
     document.getElementById('badge-iphone').hidden = false;
     document.getElementById('tab-iphone').click();
   }
+})();
+</script>
+<script>
+/* 内测名额满了:Mac 下载按钮置灰并说明。名额数从账号服务读,读不到(断网、没配名额)就保持可下载。 */
+(function () {
+  fetch('https://app.blinkwork.cn/v1/capacity', { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (c) {
+      if (!c || c.remaining !== 0) return;
+      document.querySelectorAll('#panel-mac .dl__row > a.pill--primary').forEach(function (a) {
+        var off = document.createElement('span');
+        off.className = 'pill pill--off';
+        off.setAttribute('aria-disabled', 'true');
+        off.textContent = '下载';
+        a.replaceWith(off);
+      });
+      document.querySelector('#panel-mac .dl').classList.add('dl--off');
+      document.getElementById('fullnote').hidden = false;
+    })
+    .catch(function () {});
 })();
 </script>
 </body></html>
