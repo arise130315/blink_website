@@ -1,5 +1,5 @@
 {
-  "version": "1.1",
+  "version": "1.2.0",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "新增「默认」模型，登录即送 1000 点\n需要注册登录后使用\n模型列表精简为「默认」与 DeepSeek\n账号页可看剩余点数和用量"
+  "notes": "「默认」点数也能生图和搜索\n点数用完时会直接说明\n上下文不再每轮重复压缩\n参考图做网站不再误判成生图"
 }
