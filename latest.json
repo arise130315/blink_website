@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.5.0",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "「默认」点数也能生图和搜索\n点数用完时会直接说明\n上下文不再每轮重复压缩\n参考图做网站不再误判成生图"
+  "notes": "首页改成「新的对话」\n分享只发页面，不再超限\n文件夹可以整个删除"
 }
