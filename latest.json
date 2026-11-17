@@ -1,5 +1,17 @@
 {
   "version": "1.5.0",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "首页改成「新的对话」\n分享只发页面，不再超限\n文件夹可以整个删除"
+  "notes": "首页改成「新的对话」\n分享只发页面，不再超限\n文件夹可以整个删除",
+  "packages": {
+    "darwin-arm64": {
+      "url": "https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.5.0-mac-arm64.zip",
+      "sha256": "ec7bc606a9c93be542f63d62b424e674e29cded2b0fa0a601675c0b5106aae59",
+      "size": 157427193
+    },
+    "darwin-x64": {
+      "url": "https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.5.0-mac-x64.zip",
+      "sha256": "db3ee6e1f629d37e042c44bd03fdd8cfb6ab5b3bd689c861986e6739d107abf3",
+      "size": 169147279
+    }
+  }
 }
