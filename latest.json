@@ -1,17 +1,17 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "downloadUrl": "https://blinkwork.cn/download.html",
-  "notes": "首页改成「新的对话」\n分享只发页面，不再超限\n文件夹可以整个删除",
+  "notes": "界面换上毛玻璃质感\n侧栏「我的设计」改名「项目」\n大网页切到代码不再卡顿",
   "packages": {
     "darwin-arm64": {
-      "url": "https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.5.0-mac-arm64.zip",
-      "sha256": "ec7bc606a9c93be542f63d62b424e674e29cded2b0fa0a601675c0b5106aae59",
-      "size": 157427193
+      "url": "https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.6.0-mac-arm64.zip",
+      "sha256": "22fdfbbc455ba743175fc5b3220b5b2540a2f2d5d726162b164139b62fc7f72f",
+      "size": 157428316
     },
     "darwin-x64": {
-      "url": "https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.5.0-mac-x64.zip",
-      "sha256": "db3ee6e1f629d37e042c44bd03fdd8cfb6ab5b3bd689c861986e6739d107abf3",
-      "size": 169147279
+      "url": "https://blink-dl-1310488725.cos.ap-guangzhou.myqcloud.com/download/blink-1.6.0-mac-x64.zip",
+      "sha256": "d7e915ecceca256d932b962a92b1564375b79c5df5f49e873da2af2f263b6489",
+      "size": 169148393
     }
   }
 }
